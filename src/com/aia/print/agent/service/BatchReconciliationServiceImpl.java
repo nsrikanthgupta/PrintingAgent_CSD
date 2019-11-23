@@ -48,7 +48,7 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
                     return 0;
                 } else if (batchFileDetails.getExpectedDocumentCount() == null || batchFileDetails.getActualDocumentCount() == null) {
                     return 2;
-                } else if (batchFileDetails.getExpectedDocumentCount() != null) {
+                } else if (batchFileDetails.getExpectedDocumentCount() != batchFileDetails.getActualDocumentCount()) {
                     return 0;
                 }
             }
