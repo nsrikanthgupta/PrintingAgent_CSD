@@ -4,7 +4,6 @@
 
 package com.aia.print.agent.service;
 
-import java.util.Date;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +14,6 @@ import org.springframework.util.CollectionUtils;
 import com.aia.print.agent.entiry.BatchCycle;
 import com.aia.print.agent.entiry.BatchFileDetails;
 import com.aia.print.agent.repository.BatchFileDetailsRepository;
-
-
 
 /**
  * 
@@ -43,14 +40,20 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
         List< BatchFileDetails > fileList = batchFileDetailsRepository.getBatchFileDetails(batchCycle.getBatchId());
         if (!CollectionUtils.isEmpty(fileList)) {
             for (BatchFileDetails batchFileDetails : fileList) {
-                batchFileDetails.setStatus("RECONCILIATION_SUCCESS");
-                batchFileDetails.setUpdatedBy("SD");
-                batchFileDetails.setUpdatedDate(new Date());
-                batchFileDetailsRepository.save(batchFileDetails);
+                if (batchFileDetails.getStatus().equalsIgnoreCase("TEMPLATE_GENERATION_INPROGRESS")) {
+                    return 2;
+                } else if (batchFileDetails.getStatus().equalsIgnoreCase("DOWNLOADED")) {
+                    return 2;
+                } else if (batchFileDetails.getStatus().equalsIgnoreCase("TEMPLATE_GENERATION_FAILED")) {
+                    return 0;
+                } else if (batchFileDetails.getExpectedDocumentCount() == null || batchFileDetails.getActualDocumentCount() == null) {
+                    return 2;
+                } else if (batchFileDetails.getExpectedDocumentCount() != null) {
+                    return 0;
+                }
             }
         }
         return 1;
     }
 
-	
 }

@@ -29,43 +29,49 @@ import com.aia.print.agent.service.PrintAgentService;
  */
 public class VerifyReconcileData implements Job {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(VerifyReconcileData.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(VerifyReconcileData.class);
 
-	/**
-	 * printAgentService
-	 */
+    /**
+     * printAgentService
+     */
 
-	@Autowired
+    @Autowired
 
-	@Qualifier("printAgentService")
-	private PrintAgentService printAgentService;
+    @Qualifier("printAgentService")
+    private PrintAgentService printAgentService;
 
-	/**
-	 * batchReconciliationService
-	 */
-	@Autowired
+    /**
+     * batchReconciliationService
+     */
+    @Autowired
 
-	@Qualifier("batchReconciliationService")
-	private BatchReconciliationService batchReconciliationService;
+    @Qualifier("batchReconciliationService")
+    private BatchReconciliationService batchReconciliationService;
 
-	/** {@inheritDoc} */
-	@Override
-	public void execute(JobExecutionContext context) throws JobExecutionException {
-		LOGGER.info("VerifyReconcileData Triggerd");
-		List<BatchCycle> batchCycles = printAgentService.getBatchCycles("DOWNLOADED");
-		if (CollectionUtils.isEmpty(batchCycles)) {
-			LOGGER.info("THERE ARE NO BATCH CYCLES WITH DOWNLOADED STATUS");
-		} else {
-            /*
-             * for (BatchCycle batchCycle : batchCycles) { int status =
-             * batchReconciliationService.perFormReconciliation(batchCycle); if (status == 1) {
-             * batchCycle.setStatus("RECONCILIATION_SUCCESS"); } else if (status == 2) {
-             * batchCycle.setStatus("RECONCILIATION_PARTIAL_SUCCESS"); } else { batchCycle.setStatus("RECONCILIATION_FAILED"); }
-             * batchCycle.setUpdatedBy("SD"); batchCycle.setUpdatedDate(new Date());
-             * printAgentService.updateBatchCycle(batchCycle); }
-             */
-		}
+    /** {@inheritDoc} */
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        LOGGER.info("VerifyReconcileData Triggerd");
+        List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TEMPLATE_GENERATION_INPROGRESS");
+        if (CollectionUtils.isEmpty(batchCycles)) {
+            LOGGER.info("THERE ARE NO BATCH CYCLES WITH DOWNLOADED STATUS");
+        } else {
+            for (BatchCycle batchCycle : batchCycles) {
+                int status = batchReconciliationService.perFormReconciliation(batchCycle);
+                if (status <= 1) {
+                    if (status == 1) {
+                        batchCycle.setStatus("RECONCILIATION_SUCCESS");
+                    } else if (status == 0) {
+                        batchCycle.setStatus("RECONCILIATION_FAILED");
+                    }
+                    batchCycle.setUpdatedBy("SD");
+                    batchCycle.setUpdatedDate(new Date());
+                    printAgentService.updateBatchCycle(batchCycle);
+                }
+            }
 
-	}
+        }
+
+    }
 
 }
