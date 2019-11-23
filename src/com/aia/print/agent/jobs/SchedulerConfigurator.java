@@ -24,9 +24,9 @@ import org.springframework.scheduling.quartz.SchedulerFactoryBean;
 @Configuration
 public class SchedulerConfigurator {
 
-	private static final Logger LOGGER = LogManager.getLogger(SchedulerConfigurator.class);
-	
-	/**
+    private static final Logger LOGGER = LogManager.getLogger(SchedulerConfigurator.class);
+
+    /**
      * instanceName
      */
     @Value("${org.quartz.scheduler.instanceName}")
@@ -67,41 +67,37 @@ public class SchedulerConfigurator {
      */
     @Value("${print.agent.check.cycle.pattren}")
     private String checkCyclePattern;
-    
+
     /**
      * claimstatementRestClientPattern
      * 
      */
-    
+
     @Value("${print.agent.claimstatement.pattren}")
     private String claimStatementPattern;
-    
-    
-	/**
-	 * Build and returns the JobFactory to configure the Jobs
-	 * 
-	 * @param applicationContext
-	 *            : {@link ApplicationContext}
-	 * @return <b>JobFactory</b> : {@link JobFactory}
-	 */
-	@Bean
-	public JobFactory jobFactory(ApplicationContext applicationContext) {
-		AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
-		jobFactory.setApplicationContext(applicationContext);
-		return jobFactory;
-	}
 
-	/**
-	 * Configuring Quartz Scheduler and Register a list of Trigger objects with
-	 * the Scheduler
-	 * 
-	 * @param applicationContext
-	 *            : {@link ApplicationContext}
-	 * @return <b>SchedulerFactoryBean</b> : {@link SchedulerFactoryBean}
-	 */
-	@Bean
-	public SchedulerFactoryBean schedulerFactoryBean(ApplicationContext applicationContext) {
-		SchedulerFactoryBean factory = new SchedulerFactoryBean();
+    /**
+     * Build and returns the JobFactory to configure the Jobs
+     * 
+     * @param applicationContext : {@link ApplicationContext}
+     * @return <b>JobFactory</b> : {@link JobFactory}
+     */
+    @Bean
+    public JobFactory jobFactory(ApplicationContext applicationContext) {
+        AutowiringSpringBeanJobFactory jobFactory = new AutowiringSpringBeanJobFactory();
+        jobFactory.setApplicationContext(applicationContext);
+        return jobFactory;
+    }
+
+    /**
+     * Configuring Quartz Scheduler and Register a list of Trigger objects with the Scheduler
+     * 
+     * @param applicationContext : {@link ApplicationContext}
+     * @return <b>SchedulerFactoryBean</b> : {@link SchedulerFactoryBean}
+     */
+    @Bean
+    public SchedulerFactoryBean schedulerFactoryBean(ApplicationContext applicationContext) {
+        SchedulerFactoryBean factory = new SchedulerFactoryBean();
         factory.setOverwriteExistingJobs(true);
         factory.setJobFactory(jobFactory(applicationContext));
         Properties quartzProperties = new Properties();
@@ -110,18 +106,18 @@ public class SchedulerConfigurator {
         quartzProperties.setProperty("org.quartz.threadPool.threadCount", threadCount);
         factory.setQuartzProperties(quartzProperties);
         int index = 0;
-      Trigger[] triggers = new Trigger[5];
-        //Trigger[] triggers = new Trigger[1];
+        Trigger[] triggers = new Trigger[4];
+        // Trigger[] triggers = new Trigger[1];
         triggers[index++] = CheckCyleDateTrigger().getObject();
         triggers[index++] = FileDownloadJobTrigger().getObject();
         triggers[index++] = GenerateTemplateTrigger().getObject();
         triggers[index++] = VerifyReconcileDataTrigger().getObject();
-        triggers[index++] = ClaimStatementJobTrigget().getObject();
+        // triggers[index++] = ClaimStatementJobTrigget().getObject();
         factory.setTriggers(triggers);
         return factory;
-	}
+    }
 
-	private CronTriggerFactoryBean VerifyReconcileDataTrigger() {
+    private CronTriggerFactoryBean VerifyReconcileDataTrigger() {
         try {
             CronTriggerFactoryBean cronTriggerFactoryBean = new CronTriggerFactoryBean();
             JobDetailFactoryBean detailFactoryBean = getJobDetail("com.aia.print.agent.jobs.VerifyReconcileData");
@@ -211,9 +207,8 @@ public class SchedulerConfigurator {
         return null;
     }
 
-    
     private CronTriggerFactoryBean ClaimStatementJobTrigget() {
-    	try {
+        try {
             CronTriggerFactoryBean cronTriggerFactoryBean = new CronTriggerFactoryBean();
             JobDetailFactoryBean detailFactoryBean = getJobDetail("com.aia.print.agent.jobs.ClaimStatementJob");
             if (detailFactoryBean != null) {
@@ -226,6 +221,6 @@ public class SchedulerConfigurator {
         } catch (RuntimeException | ParseException e) {
             LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e);
         }
-    	return null;
+        return null;
     }
 }

@@ -2,7 +2,7 @@
 <configuration>
 
 <!-- SIT -->
-	<property name="LOG_FILE_PATH" value="D:/bala/logs" />
+	<property name="LOG_FILE_PATH" value="C://Srikanth/logs" />
 
 <!-- 	UAT -->
 	<!-- <property name="LOG_FILE_PATH"

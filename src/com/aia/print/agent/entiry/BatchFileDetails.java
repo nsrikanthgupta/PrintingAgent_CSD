@@ -38,6 +38,9 @@ public class BatchFileDetails {
     private String fileName;
 
     @Column
+    private String documentCode;
+
+    @Column
     private String fileLocation;
 
     @Column
@@ -62,6 +65,20 @@ public class BatchFileDetails {
     @Column
     @Temporal(TemporalType.DATE)
     private Date createdDate;
+
+    @Column
+    private Integer expectedDocumentCount;
+
+    @Column
+    private Integer actualDocumentCount;
+
+    @Column
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date documentProcessStartDt;
+
+    @Column
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date documentProcessEndDt;
 
     /**
      * 
@@ -306,6 +323,96 @@ public class BatchFileDetails {
      */
     public void setCreatedDate(Date createdDate) {
         this.createdDate = createdDate;
+    }
+
+    /**
+     * Returns the documentCode.
+     * 
+     * @return the documentCode.
+     */
+    public String getDocumentCode() {
+        return documentCode;
+    }
+
+    /**
+     * Sets the documentCode.
+     * 
+     * @param documentCode the documentCode
+     */
+    public void setDocumentCode(String documentCode) {
+        this.documentCode = documentCode;
+    }
+
+    /**
+     * Returns the expectedDocumentCount.
+     * 
+     * @return the expectedDocumentCount.
+     */
+    public Integer getExpectedDocumentCount() {
+        return expectedDocumentCount;
+    }
+
+    /**
+     * Sets the expectedDocumentCount.
+     * 
+     * @param expectedDocumentCount the expectedDocumentCount
+     */
+    public void setExpectedDocumentCount(Integer expectedDocumentCount) {
+        this.expectedDocumentCount = expectedDocumentCount;
+    }
+
+    /**
+     * Returns the actualDocumentCount.
+     * 
+     * @return the actualDocumentCount.
+     */
+    public Integer getActualDocumentCount() {
+        return actualDocumentCount;
+    }
+
+    /**
+     * Sets the actualDocumentCount.
+     * 
+     * @param actualDocumentCount the actualDocumentCount
+     */
+    public void setActualDocumentCount(Integer actualDocumentCount) {
+        this.actualDocumentCount = actualDocumentCount;
+    }
+
+    /**
+     * Returns the documentProcessStartDt.
+     * 
+     * @return the documentProcessStartDt.
+     */
+    public Date getDocumentProcessStartDt() {
+        return documentProcessStartDt;
+    }
+
+    /**
+     * Sets the documentProcessStartDt.
+     * 
+     * @param documentProcessStartDt the documentProcessStartDt
+     */
+    public void setDocumentProcessStartDt(Date documentProcessStartDt) {
+        this.documentProcessStartDt = documentProcessStartDt;
+    }
+
+    /**
+     * Returns the documentProcessEndDt.
+     * 
+     * @return the documentProcessEndDt.
+     */
+    public Date getDocumentProcessEndDt() {
+        return documentProcessEndDt;
+    }
+
+    /**
+     * Sets the documentProcessEndDt.
+     * 
+     * @param documentProcessEndDt the documentProcessEndDt
+     */
+    public void setDocumentProcessEndDt(Date documentProcessEndDt) {
+        this.documentProcessEndDt = documentProcessEndDt;
     }
 
 }

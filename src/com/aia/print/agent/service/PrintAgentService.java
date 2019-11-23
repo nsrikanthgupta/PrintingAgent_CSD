@@ -7,6 +7,7 @@ package com.aia.print.agent.service;
 import java.util.List;
 
 import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
 import com.aia.print.agent.entiry.CompanyCode;
 
 /**
@@ -63,6 +64,17 @@ public interface PrintAgentService {
 	 */
 	CompanyCode getCompanyCode(String companyCode);
 
+	/**
+	 * @param newCycleDate
+	 * @param code
+	 * @return
+	 */
 	boolean verifyBatchCycleExist(String newCycleDate, CompanyCode code);
+
+    /**
+     * @param batchId
+     * @return
+     */
+    List< BatchFileDetails > getBatchFileDetails(Long batchId);
 
 }

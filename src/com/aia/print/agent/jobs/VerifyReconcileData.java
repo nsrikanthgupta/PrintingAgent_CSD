@@ -56,19 +56,14 @@ public class VerifyReconcileData implements Job {
 		if (CollectionUtils.isEmpty(batchCycles)) {
 			LOGGER.info("THERE ARE NO BATCH CYCLES WITH DOWNLOADED STATUS");
 		} else {
-			for (BatchCycle batchCycle : batchCycles) {
-				int status = batchReconciliationService.perFormReconciliation(batchCycle);
-				if (status == 1) {
-					batchCycle.setStatus("RECONCILIATION_SUCCESS");
-				} else if (status == 2) {
-					batchCycle.setStatus("RECONCILIATION_PARTIAL_SUCCESS");
-				} else {
-					batchCycle.setStatus("RECONCILIATION_FAILED");
-				}
-				batchCycle.setUpdatedBy("SD");
-				batchCycle.setUpdatedDate(new Date());
-				printAgentService.updateBatchCycle(batchCycle);
-			}
+            /*
+             * for (BatchCycle batchCycle : batchCycles) { int status =
+             * batchReconciliationService.perFormReconciliation(batchCycle); if (status == 1) {
+             * batchCycle.setStatus("RECONCILIATION_SUCCESS"); } else if (status == 2) {
+             * batchCycle.setStatus("RECONCILIATION_PARTIAL_SUCCESS"); } else { batchCycle.setStatus("RECONCILIATION_FAILED"); }
+             * batchCycle.setUpdatedBy("SD"); batchCycle.setUpdatedDate(new Date());
+             * printAgentService.updateBatchCycle(batchCycle); }
+             */
 		}
 
 	}

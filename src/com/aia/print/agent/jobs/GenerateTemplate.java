@@ -4,13 +4,11 @@
 
 package com.aia.print.agent.jobs;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.quartz.Job;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
@@ -20,11 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
 import com.aia.print.agent.entiry.CompanyCode;
-import com.aia.print.agent.repository.TableDmDocRepository;
 import com.aia.print.agent.service.PrintAgentService;
-import com.aia.print.agent.service.SubSchemaIntegrationService;
-import com.aia.print.agent.service.SubSchemaInvoiceIntegarationService;
+import com.aia.print.agent.service.TemplateGenerationService;
 
 /**
  * TODO: please describe responsibilities of class/interface
@@ -35,68 +32,65 @@ import com.aia.print.agent.service.SubSchemaInvoiceIntegarationService;
  */
 public class GenerateTemplate implements Job {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(GenerateTemplate.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GenerateTemplate.class);
 
-	/**
-	 * printAgentService
-	 */
+    /**
+     * printAgentService
+     */
+    @Autowired
+    @Qualifier("printAgentService")
+    private PrintAgentService printAgentService;
 
-	@Autowired
+    @Autowired
+    private TemplateGenerationService templateGenerationService;
 
-	@Qualifier("printAgentService")
-	private PrintAgentService printAgentService;
+    /** {@inheritDoc} */
+    @Override
+    public void execute(JobExecutionContext context) throws JobExecutionException {
+        LOGGER.info("GenerateTemplate Triggerd");
+        List< String > largeDocuments = new ArrayList<>();
+        largeDocuments.add("ASOBSE");
+        largeDocuments.add("ASOPEMSE");
+        List< String > smallDocuments = new ArrayList<>();
+        smallDocuments.add("ASOCN");
+        smallDocuments.add("ASODN");
+        smallDocuments.add("GMEXSR");
+        smallDocuments.add("ASOSBS");
+        try {
+            List< BatchCycle > batchCycles = printAgentService.getBatchCycles("DOWNLOADED");
+            if (CollectionUtils.isEmpty(batchCycles)) {
+                LOGGER.info("THERE ARE NO BATCH CYCLES WITH RECONCILIATION_SUCCESS STATUS");
+            } else {
+                for (BatchCycle batchCycle : batchCycles) {
+                    
+                    CompanyCode companyCode = printAgentService.getCompanyCode(batchCycle.getCompanyCode());
+                    List< BatchFileDetails > fileDetails = printAgentService.getBatchFileDetails(batchCycle.getBatchId());
+                    /**
+                     * Concurrent Processing Large Files --> Dedicated Thread for each Service
+                     */
+                    for (BatchFileDetails batchFileDetails : fileDetails) {
+                        if (StringUtils.isNoneBlank(batchFileDetails.getDocumentCode())) {
+                            if (largeDocuments.contains(batchFileDetails.getDocumentCode())) {
+                                templateGenerationService.processFiles(companyCode, batchCycle, batchFileDetails);
+                            }
+                        }
+                    }
+                    /**
+                     * Sequential Process
+                     */
+                    for (BatchFileDetails batchFileDetails : fileDetails) {
+                        if (StringUtils.isNoneBlank(batchFileDetails.getDocumentCode())) {
+                            if (smallDocuments.contains(batchFileDetails.getDocumentCode())) {
+                                templateGenerationService.generateTemplate(companyCode, batchCycle, batchFileDetails);
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-	@Autowired
+    }
 
-	@Qualifier("subSchemaIntegrationService")
-	private SubSchemaIntegrationService subSchemaIntegrationService;
-
-	@Autowired
-
-	@Qualifier("subSchemaInvoiceIntegarationService")
-	private SubSchemaInvoiceIntegarationService subSchemaInvoiceIntegarationService;
-
-	@Autowired
-	private TableDmDocRepository tableDmDocRepository;
-	
-/*	@Autowired
-	private InvoiceService invoiceService;*/
-
-	/** {@inheritDoc} */
-	@Override
-	public void execute(JobExecutionContext context) throws JobExecutionException {
-		LOGGER.info("GenerateTemplate Triggerd");
-
-		try {
-
-			/*List<BatchCycle> batchCycles = printAgentService.getBatchCycles("RECONCILIATION_SUCCESS");
-			if (CollectionUtils.isEmpty(batchCycles)) {
-				LOGGER.info("THERE ARE NO BATCH CYCLES WITH RECONCILIATION_SUCCESS STATUS");
-			} else {
-				for (BatchCycle batchCycle : batchCycles) {
-
-					CompanyCode companyCode = printAgentService.getCompanyCode(batchCycle.getCompanyCode());
-					Path folderPath = new File(companyCode.getLocalFolderPath().concat(batchCycle.getCycleDate())).toPath();
-					List<Path> atrackFileNames = Files.list(folderPath).collect(Collectors.toList());
-					for (Path filePath : atrackFileNames) {
-						if (filePath.toFile().getName().contains("PAFINV")) {
-						this.invoiceService.generatePdf(filePath.toFile().getAbsolutePath(), batchCycle);
-						
-						}else if(filePath.toFile().getName().contains("PAFCN")) {
-							
-						}
-						
-					}
-				}
-			}
-*/
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-
-	}
-	
-
-	
-	
 }

@@ -93,6 +93,9 @@ public class ClaimStatementDaoImpl implements ClaimStatementDao {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClaimStatementDaoImpl.class);
 
+	String jasperpath = this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()+ "../../jasper/";
+	String jasper = FilenameUtils.normalize(jasperpath, true);
+	
 	public void startReportGen(List<ClaimStatementBean> listClaimStatementBean, SympNotification sympNotification) {
 		LOGGER.info("ClaimStatementDaoImpl startReportGen() called-----------------------");
 		long listSize = listClaimStatementBean.stream().count();
@@ -373,7 +376,14 @@ public class ClaimStatementDaoImpl implements ClaimStatementDao {
 			while (rs3.next()) {
 				ClaimStatementGmmPayeeTable ClaimStatementGmmPayeeTable = new ClaimStatementGmmPayeeTable();
 				ClaimStatementGmmPayeeTable.setPayee(rs3.getString("PAYEE"));
-				ClaimStatementGmmPayeeTable.setPaymentreferenceNo(rs3.getString("TRANDATE"));
+				ClaimStatementGmmPayeeTable.setPaymentreferenceNo(rs3.getString("REQNNO"));
+				
+				StringBuilder sb3 = new StringBuilder(rs3.getString("TRANDATE"));
+				sb3.insert(4, '/');
+				sb3.insert(7, "/");
+				String TRANDATE = "" + sb3;
+				String Date = sdf.format(new Date(TRANDATE.trim()));
+				ClaimStatementGmmPayeeTable.setDate(Date);
 				ClaimStatementGmmPayeeTable.setAmnt(rs3.getString("PAYAMT"));
 				listClaimStatementGmmPayeeTable.add(ClaimStatementGmmPayeeTable);
 				claimStatementGmm.setClaimStatementGmmPayeeTable(listClaimStatementGmmPayeeTable);
@@ -415,9 +425,7 @@ public class ClaimStatementDaoImpl implements ClaimStatementDao {
 			}
 			JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(listClaimStatementGmm);
 			String jrFullReadpath = "";
-			String jasperpath = this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()
-					+ "../../jasper/";
-			String jasper = FilenameUtils.normalize(jasperpath, true);
+			
 
 			if (claimStatementBean.getClaimCompany().equalsIgnoreCase("Conventional")) {
 				if (gmmIndicator.equalsIgnoreCase("Y")) {
@@ -462,9 +470,9 @@ public class ClaimStatementDaoImpl implements ClaimStatementDao {
 			JasperExportManager.exportReportToPdfStream(jasperPrint, bos);
 			LOGGER.info("PDF Generated===!   " + file.getAbsoluteFile());
 
-			// send email success ......
+			// send email success for single file ......
 			/**
-			 * COMPANYNO
+			 * 
 			 * 
 			 */
 
@@ -654,4 +662,5 @@ public class ClaimStatementDaoImpl implements ClaimStatementDao {
 		return new java.sql.Timestamp(today.getTime());
 	}
 
+	
 }

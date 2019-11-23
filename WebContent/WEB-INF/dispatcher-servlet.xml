@@ -21,7 +21,7 @@
 
 <!-- SIT  -->
 <context:property-placeholder
-		location="file:///D:/Users/itt0284/bala_eclips/PrintingAgent_CSD/resources/application.properties" />
+		location="file:///C://Srikanth/AIA/PrintAgent/src/main/resources/application.properties" />
 
 	<context:component-scan base-package="com.aia" />
 	
