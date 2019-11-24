@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.aia.print.agent.entiry.BatchCycle;
 import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.BatchJobConfig;
 import com.aia.print.agent.entiry.CompanyCode;
 
 /**
@@ -76,5 +77,11 @@ public interface PrintAgentService {
      * @return
      */
     List< BatchFileDetails > getBatchFileDetails(Long batchId);
+
+    /**
+     * @param jobKey
+     * @return
+     */
+    BatchJobConfig getBatchJobConfigByKey(String jobKey);
 
 }

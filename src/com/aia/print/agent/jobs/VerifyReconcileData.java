@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.CollectionUtils;
 
 import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchJobConfig;
 import com.aia.print.agent.service.BatchReconciliationService;
 import com.aia.print.agent.service.PrintAgentService;
 
@@ -52,24 +53,30 @@ public class VerifyReconcileData implements Job {
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         LOGGER.info("VerifyReconcileData Triggerd");
-        List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TEMPLATE_GENERATION_INPROGRESS");
-        if (CollectionUtils.isEmpty(batchCycles)) {
-            LOGGER.info("THERE ARE NO BATCH CYCLES WITH DOWNLOADED STATUS");
-        } else {
-            for (BatchCycle batchCycle : batchCycles) {
-                int status = batchReconciliationService.perFormReconciliation(batchCycle);
-                if (status <= 1) {
-                    if (status == 1) {
-                        batchCycle.setStatus("RECONCILIATION_SUCCESS");
-                    } else if (status == 0) {
-                        batchCycle.setStatus("RECONCILIATION_FAILED");
-                    }
-                    batchCycle.setUpdatedBy("SD");
-                    batchCycle.setUpdatedDate(new Date());
-                    printAgentService.updateBatchCycle(batchCycle);
-                }
-            }
 
+        BatchJobConfig batchJobConfig = printAgentService.getBatchJobConfigByKey("VerifyReconcileData");
+        if (batchJobConfig != null && batchJobConfig.getStatus().equalsIgnoreCase("ACTIVE")) {
+            List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TEMPLATE_GENERATION_INPROGRESS");
+            if (CollectionUtils.isEmpty(batchCycles)) {
+                LOGGER.info("THERE ARE NO BATCH CYCLES WITH DOWNLOADED STATUS");
+            } else {
+                for (BatchCycle batchCycle : batchCycles) {
+                    int status = batchReconciliationService.perFormReconciliation(batchCycle);
+                    if (status <= 1) {
+                        if (status == 1) {
+                            batchCycle.setStatus("RECONCILIATION_SUCCESS");
+                        } else if (status == 0) {
+                            batchCycle.setStatus("RECONCILIATION_FAILED");
+                        }
+                        batchCycle.setUpdatedBy("SD");
+                        batchCycle.setUpdatedDate(new Date());
+                        printAgentService.updateBatchCycle(batchCycle);
+                    }
+                }
+
+            }
+        } else {
+            LOGGER.info("VerifyReconcileData JOB IS NOT ACTIVE");
         }
 
     }

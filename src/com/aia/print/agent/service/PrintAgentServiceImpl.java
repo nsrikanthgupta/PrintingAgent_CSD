@@ -28,9 +28,11 @@ import org.springframework.util.StringUtils;
 
 import com.aia.print.agent.entiry.BatchCycle;
 import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.BatchJobConfig;
 import com.aia.print.agent.entiry.CompanyCode;
 import com.aia.print.agent.repository.BatchCycleRepository;
 import com.aia.print.agent.repository.BatchFileDetailsRepository;
+import com.aia.print.agent.repository.BatchJobConfigRepository;
 import com.aia.print.agent.repository.CompanyCodeRepository;
 import com.ibm.as400.access.AS400;
 import com.ibm.as400.access.AS400SecurityException;
@@ -65,7 +67,18 @@ public class PrintAgentServiceImpl implements PrintAgentService {
      */
     @Autowired
     private BatchFileDetailsRepository batchFileDetailsRepository;
+    
+    
+    /**
+     * batchJobConfigRepository
+     */
+    @Autowired
+    private BatchJobConfigRepository batchJobConfigRepository;
+    
 
+    /**
+     * reconcilationCode
+     */
     @Value("${print.agent.reconcilation.code}")
     private String reconcilationCode;
 
@@ -278,6 +291,16 @@ public class PrintAgentServiceImpl implements PrintAgentService {
     @Override
     public List< BatchFileDetails > getBatchFileDetails(Long batchId) {
         return batchFileDetailsRepository.getBatchFileDetails(batchId);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public BatchJobConfig getBatchJobConfigByKey(String jobKey) {
+        List<BatchJobConfig> list = batchJobConfigRepository.getBatchJobConfigByKey(jobKey);
+        if(CollectionUtils.isNotEmpty(list)) {
+            return list.get(0);
+        }
+        return null;
     }
 
 }

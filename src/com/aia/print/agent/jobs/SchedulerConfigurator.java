@@ -1,13 +1,16 @@
 package com.aia.print.agent.jobs;
 
 import java.text.ParseException;
+import java.util.List;
 import java.util.Properties;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.quartz.Job;
 import org.quartz.Trigger;
 import org.quartz.spi.JobFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +18,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.quartz.CronTriggerFactoryBean;
 import org.springframework.scheduling.quartz.JobDetailFactoryBean;
 import org.springframework.scheduling.quartz.SchedulerFactoryBean;
+
+import com.aia.print.agent.entiry.BatchJobConfig;
+import com.aia.print.agent.repository.BatchJobConfigRepository;
 
 /**
  * Configuring the All Scheduler Jobs
@@ -47,34 +53,40 @@ public class SchedulerConfigurator {
     /**
      * verifyReconcilePattern
      */
-    @Value("${print.agent.verify.reconcile.pattren}")
-    private String verifyReconcilePattern;
-
-    /**
-     * generateTemplatePattern
-     */
-    @Value("${print.agent.generate.template.pattren}")
-    private String generateTemplatePattern;
-
-    /**
-     * fileDownloadPattern
-     */
-    @Value("${print.agent.file.download.pattren}")
-    private String fileDownloadPattern;
-
-    /**
-     * checkCyclePattern
-     */
-    @Value("${print.agent.check.cycle.pattren}")
-    private String checkCyclePattern;
-
-    /**
-     * claimstatementRestClientPattern
+    /*
+     * @Value("${print.agent.verify.reconcile.pattren}") private String verifyReconcilePattern;
      * 
-     */
+     *//**
+        * generateTemplatePattern
+        */
+    /*
+     * @Value("${print.agent.generate.template.pattren}") private String generateTemplatePattern;
+     * 
+     *//**
+        * fileDownloadPattern
+        */
+    /*
+     * @Value("${print.agent.file.download.pattren}") private String fileDownloadPattern;
+     * 
+     *//**
+        * checkCyclePattern
+        */
+    /*
+     * @Value("${print.agent.check.cycle.pattren}") private String checkCyclePattern;
+     * 
+     *//**
+        * claimstatementRestClientPattern
+        * 
+        *//*
+           * 
+           * @Value("${print.agent.claimstatement.pattren}") private String claimStatementPattern;
+           */
 
-    @Value("${print.agent.claimstatement.pattren}")
-    private String claimStatementPattern;
+    /**
+     * batchJobConfigRepository
+     */
+    @Autowired
+    private BatchJobConfigRepository batchJobConfigRepository;
 
     /**
      * Build and returns the JobFactory to configure the Jobs
@@ -106,26 +118,40 @@ public class SchedulerConfigurator {
         quartzProperties.setProperty("org.quartz.threadPool.threadCount", threadCount);
         factory.setQuartzProperties(quartzProperties);
         int index = 0;
-        Trigger[] triggers = new Trigger[4];
-        // Trigger[] triggers = new Trigger[1];
-        triggers[index++] = CheckCyleDateTrigger().getObject();
-        triggers[index++] = FileDownloadJobTrigger().getObject();
-        triggers[index++] = GenerateTemplateTrigger().getObject();
-        triggers[index++] = VerifyReconcileDataTrigger().getObject();
-        // triggers[index++] = ClaimStatementJobTrigget().getObject();
-        factory.setTriggers(triggers);
+
+        List< BatchJobConfig > batchJobConfigList = batchJobConfigRepository.getBatchJobConfig();
+        if (CollectionUtils.isNotEmpty(batchJobConfigList)) {
+            Trigger[] triggers = new Trigger[batchJobConfigList.size()];
+            for (BatchJobConfig factoryBean : batchJobConfigList) {
+                CronTriggerFactoryBean cronTriggerFactoryBean = getCronTrigger(factoryBean);
+                if (cronTriggerFactoryBean != null) {
+                    triggers[index++] = cronTriggerFactoryBean.getObject();
+                }
+            }
+            factory.setTriggers(triggers);
+        }
+        /*
+         * Trigger[] triggers = new Trigger[4]; // Trigger[] triggers = new Trigger[1]; triggers[index++] =
+         * CheckCyleDateTrigger().getObject(); triggers[index++] = FileDownloadJobTrigger().getObject(); triggers[index++] =
+         * GenerateTemplateTrigger().getObject(); triggers[index++] = VerifyReconcileDataTrigger().getObject(); //
+         * triggers[index++] = ClaimStatementJobTrigget().getObject();factory.setTriggers(triggers);
+         */
         return factory;
     }
 
-    private CronTriggerFactoryBean VerifyReconcileDataTrigger() {
+    /**
+     * @param factoryBean
+     * @return
+     */
+    private CronTriggerFactoryBean getCronTrigger(BatchJobConfig factoryBean) {
         try {
             CronTriggerFactoryBean cronTriggerFactoryBean = new CronTriggerFactoryBean();
-            JobDetailFactoryBean detailFactoryBean = getJobDetail("com.aia.print.agent.jobs.VerifyReconcileData");
+            JobDetailFactoryBean detailFactoryBean = getJobDetail(factoryBean);
             if (detailFactoryBean != null) {
                 cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject());
             }
-            cronTriggerFactoryBean.setBeanName("VerifyReconcileTrigger");
-            cronTriggerFactoryBean.setCronExpression(verifyReconcilePattern);
+            cronTriggerFactoryBean.setBeanName(factoryBean.getJobKey().concat("Trigger"));
+            cronTriggerFactoryBean.setCronExpression(factoryBean.getExpression());
             cronTriggerFactoryBean.afterPropertiesSet();
             return cronTriggerFactoryBean;
         } catch (RuntimeException | ParseException e) {
@@ -138,16 +164,16 @@ public class SchedulerConfigurator {
      * @param factoryBean
      * @return
      */
-    private JobDetailFactoryBean getJobDetail(String factoryBean) {
+    private JobDetailFactoryBean getJobDetail(BatchJobConfig factoryBean) {
         try {
-            Class< ? > cls = Class.forName(factoryBean);
+            Class< ? > cls = Class.forName(factoryBean.getJobDetail());
             Job obj = (Job) cls.newInstance();
             JobDetailFactoryBean jobDetailFactoryBean = new JobDetailFactoryBean();
             jobDetailFactoryBean.setJobClass(obj.getClass());
-            jobDetailFactoryBean.setDescription(factoryBean);
+            jobDetailFactoryBean.setDescription(factoryBean.getJobDescription());
             jobDetailFactoryBean.setDurability(true);
-            jobDetailFactoryBean.setBeanName(factoryBean.concat("JobDetail"));
-            jobDetailFactoryBean.setName(factoryBean);
+            jobDetailFactoryBean.setBeanName(factoryBean.getJobKey().concat("JobDetail"));
+            jobDetailFactoryBean.setName(factoryBean.getJobKey());
             jobDetailFactoryBean.afterPropertiesSet();
             return jobDetailFactoryBean;
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
@@ -156,71 +182,63 @@ public class SchedulerConfigurator {
         return null;
     }
 
-    private CronTriggerFactoryBean GenerateTemplateTrigger() {
-        try {
-            CronTriggerFactoryBean cronTriggerFactoryBean = new CronTriggerFactoryBean();
-            JobDetailFactoryBean detailFactoryBean = getJobDetail("com.aia.print.agent.jobs.GenerateTemplate");
-            if (detailFactoryBean != null) {
-                cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject());
-            }
-            cronTriggerFactoryBean.setBeanName("GenerateTemplateTrigger");
-            cronTriggerFactoryBean.setCronExpression(generateTemplatePattern);
-            cronTriggerFactoryBean.afterPropertiesSet();
-            return cronTriggerFactoryBean;
-        } catch (RuntimeException | ParseException e) {
-            LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e);
-        }
-        return null;
-    }
-
-    private CronTriggerFactoryBean FileDownloadJobTrigger() {
-        try {
-            CronTriggerFactoryBean cronTriggerFactoryBean = new CronTriggerFactoryBean();
-            JobDetailFactoryBean detailFactoryBean = getJobDetail("com.aia.print.agent.jobs.FileDownloadJob");
-            if (detailFactoryBean != null) {
-                cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject());
-            }
-            cronTriggerFactoryBean.setBeanName("FileDownloadJobTrigger");
-            cronTriggerFactoryBean.setCronExpression(fileDownloadPattern);
-            cronTriggerFactoryBean.afterPropertiesSet();
-            return cronTriggerFactoryBean;
-        } catch (RuntimeException | ParseException e) {
-            LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e);
-        }
-        return null;
-    }
-
-    private CronTriggerFactoryBean CheckCyleDateTrigger() {
-        try {
-            CronTriggerFactoryBean cronTriggerFactoryBean = new CronTriggerFactoryBean();
-            JobDetailFactoryBean detailFactoryBean = getJobDetail("com.aia.print.agent.jobs.CheckCyleDateJob");
-            if (detailFactoryBean != null) {
-                cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject());
-            }
-            cronTriggerFactoryBean.setBeanName("CheckCyleDateTrigger");
-            cronTriggerFactoryBean.setCronExpression(checkCyclePattern);
-            cronTriggerFactoryBean.afterPropertiesSet();
-            return cronTriggerFactoryBean;
-        } catch (RuntimeException | ParseException e) {
-            LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e);
-        }
-        return null;
-    }
-
-    private CronTriggerFactoryBean ClaimStatementJobTrigget() {
-        try {
-            CronTriggerFactoryBean cronTriggerFactoryBean = new CronTriggerFactoryBean();
-            JobDetailFactoryBean detailFactoryBean = getJobDetail("com.aia.print.agent.jobs.ClaimStatementJob");
-            if (detailFactoryBean != null) {
-                cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject());
-            }
-            cronTriggerFactoryBean.setBeanName("ClaimStatementJob");
-            cronTriggerFactoryBean.setCronExpression(claimStatementPattern);
-            cronTriggerFactoryBean.afterPropertiesSet();
-            return cronTriggerFactoryBean;
-        } catch (RuntimeException | ParseException e) {
-            LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e);
-        }
-        return null;
-    }
+    /*
+     * private CronTriggerFactoryBean VerifyReconcileDataTrigger() { try { CronTriggerFactoryBean cronTriggerFactoryBean = new
+     * CronTriggerFactoryBean(); JobDetailFactoryBean detailFactoryBean =
+     * getJobDetail("com.aia.print.agent.jobs.VerifyReconcileData"); if (detailFactoryBean != null) {
+     * cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject()); }
+     * cronTriggerFactoryBean.setBeanName("VerifyReconcileTrigger");
+     * cronTriggerFactoryBean.setCronExpression(verifyReconcilePattern); cronTriggerFactoryBean.afterPropertiesSet(); return
+     * cronTriggerFactoryBean; } catch (RuntimeException | ParseException e) {
+     * LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e); } return null; }
+     * 
+     * /**
+     * 
+     * @param factoryBean
+     * 
+     * @return
+     *//*
+        * private JobDetailFactoryBean getJobDetail(String factoryBean) { try { Class< ? > cls = Class.forName(factoryBean); Job
+        * obj = (Job) cls.newInstance(); JobDetailFactoryBean jobDetailFactoryBean = new JobDetailFactoryBean();
+        * jobDetailFactoryBean.setJobClass(obj.getClass()); jobDetailFactoryBean.setDescription(factoryBean);
+        * jobDetailFactoryBean.setDurability(true); jobDetailFactoryBean.setBeanName(factoryBean.concat("JobDetail"));
+        * jobDetailFactoryBean.setName(factoryBean); jobDetailFactoryBean.afterPropertiesSet(); return jobDetailFactoryBean; }
+        * catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+        * LOGGER.error("Excepiton Occured While Constructing Job Detail Factory Bean : " + e.getMessage(), e); } return null; }
+        * 
+        * private CronTriggerFactoryBean GenerateTemplateTrigger() { try { CronTriggerFactoryBean cronTriggerFactoryBean = new
+        * CronTriggerFactoryBean(); JobDetailFactoryBean detailFactoryBean =
+        * getJobDetail("com.aia.print.agent.jobs.GenerateTemplate"); if (detailFactoryBean != null) {
+        * cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject()); }
+        * cronTriggerFactoryBean.setBeanName("GenerateTemplateTrigger");
+        * cronTriggerFactoryBean.setCronExpression(generateTemplatePattern); cronTriggerFactoryBean.afterPropertiesSet(); return
+        * cronTriggerFactoryBean; } catch (RuntimeException | ParseException e) {
+        * LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e); } return null; }
+        * 
+        * private CronTriggerFactoryBean FileDownloadJobTrigger() { try { CronTriggerFactoryBean cronTriggerFactoryBean = new
+        * CronTriggerFactoryBean(); JobDetailFactoryBean detailFactoryBean =
+        * getJobDetail("com.aia.print.agent.jobs.FileDownloadJob"); if (detailFactoryBean != null) {
+        * cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject()); }
+        * cronTriggerFactoryBean.setBeanName("FileDownloadJobTrigger");
+        * cronTriggerFactoryBean.setCronExpression(fileDownloadPattern); cronTriggerFactoryBean.afterPropertiesSet(); return
+        * cronTriggerFactoryBean; } catch (RuntimeException | ParseException e) {
+        * LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e); } return null; }
+        * 
+        * private CronTriggerFactoryBean CheckCyleDateTrigger() { try { CronTriggerFactoryBean cronTriggerFactoryBean = new
+        * CronTriggerFactoryBean(); JobDetailFactoryBean detailFactoryBean =
+        * getJobDetail("com.aia.print.agent.jobs.CheckCyleDateJob"); if (detailFactoryBean != null) {
+        * cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject()); }
+        * cronTriggerFactoryBean.setBeanName("CheckCyleDateTrigger"); cronTriggerFactoryBean.setCronExpression(checkCyclePattern);
+        * cronTriggerFactoryBean.afterPropertiesSet(); return cronTriggerFactoryBean; } catch (RuntimeException | ParseException
+        * e) { LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e); } return null; }
+        * 
+        * private CronTriggerFactoryBean ClaimStatementJobTrigget() { try { CronTriggerFactoryBean cronTriggerFactoryBean = new
+        * CronTriggerFactoryBean(); JobDetailFactoryBean detailFactoryBean =
+        * getJobDetail("com.aia.print.agent.jobs.ClaimStatementJob"); if (detailFactoryBean != null) {
+        * cronTriggerFactoryBean.setJobDetail(detailFactoryBean.getObject()); }
+        * cronTriggerFactoryBean.setBeanName("ClaimStatementJob");
+        * cronTriggerFactoryBean.setCronExpression(claimStatementPattern); cronTriggerFactoryBean.afterPropertiesSet(); return
+        * cronTriggerFactoryBean; } catch (RuntimeException | ParseException e) {
+        * LOGGER.error("Excepiton Occured While Creating Cron Factory: " + e.getMessage(), e); } return null; }
+        */
 }
