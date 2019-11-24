@@ -22,17 +22,15 @@ import com.aia.print.agent.service.BatchReconciliationService;
 import com.aia.print.agent.service.PrintAgentService;
 
 /**
+ * TODO: please describe responsibilities of class/interface
+ * 
  * 
  * @author Srikanth Neerumalla
- * @DateTime 4 Oct 2019 2:21:51 pm
+ * @DateTime 24 Nov 2019 1:12:14 pm
  */
-public class VerifyReconcileData implements Job {
+public class VerifyTemplateGeneration implements Job {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(VerifyReconcileData.class);
-
-    /**
-     * printAgentService
-     */
+    private static final Logger LOGGER = LoggerFactory.getLogger(VerifyTemplateGeneration.class);
 
     @Autowired
     @Qualifier("printAgentService")
@@ -45,35 +43,26 @@ public class VerifyReconcileData implements Job {
     @Qualifier("batchReconciliationService")
     private BatchReconciliationService batchReconciliationService;
 
-    /** {@inheritDoc} */
     @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
-        LOGGER.info("VerifyReconcileData Triggerd");
+    public void execute(JobExecutionContext arg0) throws JobExecutionException {
+        LOGGER.debug("VerifyTemplateGeneration Triggered");
         BatchJobConfig batchJobConfig = printAgentService.getBatchJobConfigByKey("VerifyReconcileData");
         if (batchJobConfig != null && batchJobConfig.getStatus().equalsIgnoreCase("ACTIVE")) {
-            List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TMPl_GENERATION_COMPLETED");
+            List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TEMPLATE_GENERATION_INPROGRESS");
             if (CollectionUtils.isEmpty(batchCycles)) {
                 LOGGER.info("THERE ARE NO BATCH CYCLES WITH DOWNLOADED STATUS");
             } else {
                 for (BatchCycle batchCycle : batchCycles) {
-                    int status = batchReconciliationService.perFormReconciliation(batchCycle);
-                    if (status <= 1) {
-                        if (status == 1) {
-                            batchCycle.setStatus("RECONCILIATION_SUCCESS");
-                        } else if (status == 0) {
-                            batchCycle.setStatus("RECONCILIATION_FAILED");
-                        }
-                        batchCycle.setUpdatedBy("SD");
+                    int status = batchReconciliationService.verifyTemplateGeneration(batchCycle);
+                    if (status == 1) {
                         batchCycle.setUpdatedDate(new Date());
+                        batchCycle.setUpdatedBy("SD");
+                        batchCycle.setStatus("TMPl_GENERATION_COMPLETED");
                         printAgentService.updateBatchCycle(batchCycle);
                     }
                 }
-
             }
-        } else {
-            LOGGER.info("VerifyReconcileData JOB IS NOT ACTIVE");
         }
-
     }
 
 }

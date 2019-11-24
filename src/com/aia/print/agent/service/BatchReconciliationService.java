@@ -14,6 +14,16 @@ import com.aia.print.agent.entiry.BatchCycle;
  */
 public interface BatchReconciliationService {
 
+    /**
+     * @param batchCycle
+     * @return
+     */
     int perFormReconciliation(BatchCycle batchCycle);
+
+    /**
+     * @param batchCycle
+     * @return
+     */
+    int verifyTemplateGeneration(BatchCycle batchCycle);
 
 }

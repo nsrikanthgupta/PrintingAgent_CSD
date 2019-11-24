@@ -7,6 +7,7 @@ package com.aia.print.agent.service;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -30,6 +31,9 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
     @Autowired
     private BatchFileDetailsRepository batchFileDetailsRepository;
 
+    @Value("${print.agent.reconcilation.code}")
+    private String reconcilationCode;
+
     /** {@inheritDoc} */
     @Override
     @Transactional
@@ -46,11 +50,26 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
                     return 2;
                 } else if (batchFileDetails.getStatus().equalsIgnoreCase("TEMPLATE_GENERATION_FAILED")) {
                     return 0;
-                } else if (batchFileDetails.getExpectedDocumentCount() == null || batchFileDetails.getActualDocumentCount() == null) {
+                } else if (batchFileDetails.getExpectedDocumentCount() == null
+                    || batchFileDetails.getActualDocumentCount() == null) {
                     return 2;
                 } else if (batchFileDetails.getExpectedDocumentCount() != batchFileDetails.getActualDocumentCount()) {
                     return 0;
                 }
+            }
+        }
+        return 1;
+    }
+
+    @Override
+    public int verifyTemplateGeneration(BatchCycle batchCycle) {
+        List< BatchFileDetails > fileList = batchFileDetailsRepository.getBatchFileDetails(batchCycle.getBatchId());
+        for (BatchFileDetails batchFileDetails : fileList) {
+            if (batchFileDetails.getFileName().contains(reconcilationCode)) {
+                continue;
+            }
+            if (!batchFileDetails.getStatus().equalsIgnoreCase("TMPl_GENERATION_COMPLETED")) {
+                return 0;
             }
         }
         return 1;
