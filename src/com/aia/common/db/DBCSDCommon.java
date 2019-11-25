@@ -180,8 +180,8 @@ public class DBCSDCommon {
 		try {
 			Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
 			conn = DriverManager.getConnection(
-					"jdbc:sqlserver://10.136.101.124:1433;databaseName=aiaIMGdb_CSD;selectMethod=cursor", "uatuser",
-					"INGuat02");
+					this.dataSourceUrl+";selectMethod=cursor", this.dataSourceUsername,
+					this.dataSourcePassword);
 
 			String strSql = " INSERT INTO tbl_dm_doc (id,dm_doc_id,mt_doc_type_cd,proposal_no,process_year,dm_status,tbl_doc_nm,created_by,created_dt,doc_creation_dt,company_code,client_no,client_name,bill_no,bill_type,sub_client_no,sub_client_name,file_format,proposal_type,indicator,page_count) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 

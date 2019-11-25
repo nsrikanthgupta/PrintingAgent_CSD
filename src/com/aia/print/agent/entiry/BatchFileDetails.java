@@ -79,6 +79,9 @@ public class BatchFileDetails {
     @Column
     @Temporal(TemporalType.TIMESTAMP)
     private Date documentProcessEndDt;
+    
+    @Column
+    private String parseError;
 
     /**
      * 
@@ -415,4 +418,34 @@ public class BatchFileDetails {
         this.documentProcessEndDt = documentProcessEndDt;
     }
 
+	/**
+	 * @return the parseError
+	 */
+	public String getParseError() {
+		return parseError;
+	}
+
+	/**
+	 * @param parseError the parseError to set
+	 */
+	public void setParseError(String parseError) {
+		this.parseError = parseError;
+	}
+
+	/* (non-Javadoc)
+	 * @see java.lang.Object#toString()
+	 */
+	@Override
+	public String toString() {
+		return "BatchFileDetails [batchId=" + batchId + ", batchFileId=" + batchFileId + ", fileName=" + fileName
+				+ ", documentCode=" + documentCode + ", fileLocation=" + fileLocation + ", status=" + status
+				+ ", archivePath=" + archivePath + ", remarks=" + remarks + ", createdBy=" + createdBy + ", updatedBy="
+				+ updatedBy + ", updatedDate=" + updatedDate + ", createdDate=" + createdDate
+				+ ", expectedDocumentCount=" + expectedDocumentCount + ", actualDocumentCount=" + actualDocumentCount
+				+ ", documentProcessStartDt=" + documentProcessStartDt + ", documentProcessEndDt="
+				+ documentProcessEndDt + ", parseError=" + parseError + "]";
+	}
+	
+	
+    
 }

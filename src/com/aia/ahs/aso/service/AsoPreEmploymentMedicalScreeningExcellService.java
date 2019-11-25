@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -24,25 +25,31 @@ import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
-
 import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.aia.ahs.aso.model.AsoPreEmployment;
 import com.aia.common.db.DBCSDCommon;
+import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.CompanyCode;
+import com.aia.print.agent.service.TemplateActions;
 
-@Service
-public class AsoPreEmploymentMedicalScreeningExcellService {
+@Service("asoPreEmploymentMedicalScreeningExcellService")
+public class AsoPreEmploymentMedicalScreeningExcellService implements TemplateActions {
+	 private static final Logger LOGGER = LoggerFactory.getLogger(AsoPreEmploymentMedicalScreeningExcellService.class);
+
 	@Autowired
 	private DBCSDCommon dbcmd;
-	
+
 	@Value("${print.agent.fileoutput.path}")
 	private String outputPath;
-	
+
 	SimpleDateFormat sdf = new SimpleDateFormat("YYYY");
 
 	SimpleDateFormat ymd = new SimpleDateFormat("YYYY-MM-dd");
@@ -55,7 +62,7 @@ public class AsoPreEmploymentMedicalScreeningExcellService {
 	private String tableName;
 	private String tbl_doc_nm;
 	private static final String file_format = "xlsx";
-	
+
 	private Integer dmStatus = 1;
 	private String process_year;
 	private String proposalNo; // policynum
@@ -67,75 +74,85 @@ public class AsoPreEmploymentMedicalScreeningExcellService {
 	private String sub_client_no;
 	private String sub_client_name;
 	private String g4CycleDate;
-	
-	public void generateExcelReport(String filePath, String company) {
-		this.g4CycleDate=getG4CycleDate(filePath).trim();
-		this.doc_creation_dt = ymd.format(new Date(this.g4CycleDate));
-		this.year = sdf.format(new Date(this.g4CycleDate));
-		this.tableName = "tbl_asopemse_" + this.year;
-		this.tbl_doc_nm = "[aiaIMGdb_CSD_" + this.year + "]..[" + this.tableName + "]";
-		this.process_year = this.year;
 
-		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> listDetailsRS = getHeaderDetails(filePath);
-		HashMap<Integer, List<AsoPreEmployment>> asoPreEmploymentDetailsRS = getAsoPreEmploymentExcellData(filePath);
-		int noFiles = listDetailsRS.size();
-		for (int i = 0; i < noFiles; i++) {
-			HashMap<Integer, HashMap<String, Object>> detailsRS = listDetailsRS.get(i);
-			List<AsoPreEmployment> listasoPreEmploymentDetails = asoPreEmploymentDetailsRS.get(i);
-			// System.out.println("==>"+listmemberDetails);
+	public int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails) {
+		int documentCount = 0;
 
-			HashMap<String, Object> datasource = new HashMap<String, Object>();
-			for (int a = 0; a < detailsRS.size(); a++) {
-				HashMap<String, Object> details = detailsRS.get(a);
-				datasource.putAll(details);
+		try {
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+			this.g4CycleDate = batchCycle.getCycleDate();
+			this.doc_creation_dt = ymd.format(dateFormat.parse(this.g4CycleDate));
+			this.year = sdf.format(dateFormat.parse(this.g4CycleDate));
+			this.tableName = "tbl_asopemse_" + this.year;
+			this.tbl_doc_nm = "[aiaIMGdb_CSD_" + this.year + "]..[" + this.tableName + "]";
+			this.process_year = this.year;
+
+			HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> listDetailsRS = getHeaderDetails(
+					batchFileDetails.getFileLocation());
+			HashMap<Integer, List<AsoPreEmployment>> asoPreEmploymentDetailsRS = getAsoPreEmploymentExcellData(
+					batchFileDetails.getFileLocation());
+			int noFiles = listDetailsRS.size();
+			for (int i = 0; i < noFiles; i++) {
+				HashMap<Integer, HashMap<String, Object>> detailsRS = listDetailsRS.get(i);
+				List<AsoPreEmployment> listasoPreEmploymentDetails = asoPreEmploymentDetailsRS.get(i);
+				// System.out.println("==>"+listmemberDetails);
+
+				HashMap<String, Object> datasource = new HashMap<String, Object>();
+				for (int a = 0; a < detailsRS.size(); a++) {
+					HashMap<String, Object> details = detailsRS.get(a);
+					datasource.putAll(details);
+				}
+
+				this.proposalNo = (String) datasource.get("policyNum");
+				this.client_no = (String) datasource.get("policyHolderNum");
+				this.client_name = (String) datasource.get("policyHolder");
+				this.bill_no = (String) datasource.get("billNum");
+				this.proposal_type = (String) datasource.get("policyType");
+				this.sub_client_no = (String) datasource.get("subsidiaryNum");
+				this.sub_client_name = (String) datasource.get("subsidiary");
+				if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
+					this.sub_client_name=this.client_name;
+				}
+
+				/*
+				 * String billperiod=""+datasource.get("billMonth"); String
+				 * billmonth=billperiod.replace("/", "").replace(" ", "").trim();
+				 */
+				String excelfilename = datasource.get("policyNum") + "_" + datasource.get("billNum")
+						+ "_PreEmploymentMedicalScreeningListing.xlsx";
+
+				if (this.uploadExcelReport(listasoPreEmploymentDetails, excelfilename, companyCode.getCompanyCode())) {
+					++documentCount;
+				}
 			}
-
-			this.proposalNo = (String) datasource.get("policyNum");
-			this.client_no = (String) datasource.get("policyHolderNum");
-			this.client_name = (String) datasource.get("policyHolder");
-			this.bill_no = (String) datasource.get("billNum");
-			this.proposal_type = (String) datasource.get("policyType");
-			this.sub_client_no = (String) datasource.get("subsidiaryNum");
-			this.sub_client_name = (String) datasource.get("subsidiary");
-			if (this.sub_client_name.equalsIgnoreCase("-") || this.sub_client_name.isEmpty()
-					|| this.sub_client_name == null) {
-				this.sub_client_name = this.client_name;
-			}
-
-			/*
-			 * String billperiod=""+datasource.get("billMonth"); String
-			 * billmonth=billperiod.replace("/", "").replace(" ", "").trim();
-			 */
-			String excelfilename = datasource.get("policyNum") + "_" + datasource.get("billNum")
-					+ "_PreEmploymentMedicalScreeningListing.xlsx";
-
-			uploadExcelReport(listasoPreEmploymentDetails, excelfilename, company);
+		} catch (ParseException e) {
+			e.printStackTrace();
 		}
-		//System.out.println("uploaded=======");
 
+		return documentCount;
 	}
 
-	private synchronized void uploadExcelReport(List<AsoPreEmployment> listasoPreEmploymentDetails,
-			String excelfilename, String company) {
+	private boolean uploadExcelReport(List<AsoPreEmployment> listasoPreEmploymentDetails, String excelfilename,
+			String company) {
 		String[] column = null;
 		if (company.equalsIgnoreCase("Co3")) {
-			this.companyCode =3; 
+			this.companyCode = 3;
 			column = new String[] { "Policy Number", "Company Name", "Billing Month[MM/YYYY]", "Bill Number",
 					"Claim No.", "Claimant Name", "Claimant\n NRIC/Passport No.", "Plan No.", "Plan Description",
 					"Product Code", "Product Description", "Branch", "Cost Centre", "Visit Date",
 					"Hospital/Clinic/Specialist", "Claim Type", "ASO Paid (RM)", "ASO Excess (RM)", "GST (RM)",
 					"Total Amount (RM)", "Reason For Excess (1)", "Excess Amount (1) (RM)", "Reason For Excess (2)",
-					"Excess Amount (2) (RM)", "Reason For Excess (3)", "Excess Amount (3) (RM)", "Reason For Excess (4)",
-					"Excess Amount (4) (RM)" };
+					"Excess Amount (2) (RM)", "Reason For Excess (3)", "Excess Amount (3) (RM)",
+					"Reason For Excess (4)", "Excess Amount (4) (RM)" };
 		} else if (company.equalsIgnoreCase("Co4")) {
-			this.companyCode =4;
+			this.companyCode = 4;
 			column = new String[] { "Certificate Number", "Company Name", "Billing Month[MM/YYYY]", "Bill Number",
 					"Claim No.", "Claimant Name", "Claimant\n NRIC/Passport No.", "Plan No.", "Plan Description",
 					"Product Code", "Product Description", "Branch", "Cost Centre", "Visit Date",
 					"Hospital/Clinic/Specialist", "Claim Type", "ASO Paid (RM)", "ASO Excess (RM)", "GST (RM)",
 					"Total Amount (RM)", "Reason For Excess (1)", "Excess Amount (1) (RM)", "Reason For Excess (2)",
-					"Excess Amount (2) (RM)", "Reason For Excess (3)", "Excess Amount (3) (RM)", "Reason For Excess (4)",
-					"Excess Amount (4) (RM)" };
+					"Excess Amount (2) (RM)", "Reason For Excess (3)", "Excess Amount (3) (RM)",
+					"Reason For Excess (4)", "Excess Amount (4) (RM)" };
 		}
 
 		// Workbook workbook = new XSSFWorkbook();
@@ -185,7 +202,7 @@ public class AsoPreEmploymentMedicalScreeningExcellService {
 		BufferedOutputStream outputStream = null;
 		try {
 
-			String excellOutputPath =this.outputPath+"/"+companyCode+"/"+this.doc_creation_dt.replace("-","");
+			String excellOutputPath = this.outputPath + "/" + companyCode + "/" + this.doc_creation_dt.replace("-", "");
 			File dir = new File(excellOutputPath);
 			if (!dir.exists()) {
 				if (dir.mkdirs()) {
@@ -208,7 +225,7 @@ public class AsoPreEmploymentMedicalScreeningExcellService {
 			byte[] fileContent = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
 
 			String dataId = UUID.randomUUID().toString();
-			
+
 			boolean add = dbcmd.checktblDmDoc(this.companyCode, proposalNo, this.doc_creation_dt, docType, bill_no);
 			if (add) {
 				dbcmd.insertIntoDocTypeTable(dataId, fileContent, this.tableName, this.year);
@@ -228,6 +245,7 @@ public class AsoPreEmploymentMedicalScreeningExcellService {
 		} catch (Exception e) {
 			System.out.println(
 					"Exception in AsoPreEmploymentMedicalScreeningExcellService.uploadExcelReport() :" + e.toString());
+			return false;
 		} finally {
 			try {
 
@@ -235,7 +253,7 @@ public class AsoPreEmploymentMedicalScreeningExcellService {
 					workbook.dispose();
 					workbook.close();
 				}
-				
+
 				if (outputStream != null) {
 					outputStream.flush();
 					outputStream.close();
@@ -245,7 +263,7 @@ public class AsoPreEmploymentMedicalScreeningExcellService {
 				e.printStackTrace();
 			}
 		}
-
+		return true;
 	}
 
 	private void createDataRow(AsoPreEmployment data, Row row, CellStyle cellStyle, CellStyle curencyCellStyle) {
@@ -644,14 +662,6 @@ public class AsoPreEmploymentMedicalScreeningExcellService {
 	public static java.sql.Timestamp getCurrentTimeStamp() {
 		java.util.Date today = new java.util.Date();
 		return new java.sql.Timestamp(today.getTime());
-	}
-
-	public static void main(String args[]) {
-		String filePath = "D:\\20190928\\Co3_ASOPEMSE_pre employement Billing Statement_20190928_0069.CSV";
-		String company = "Co4";
-		AsoPreEmploymentMedicalScreeningExcellService asoPreEmploymentMedicalScreeningExcellService = new AsoPreEmploymentMedicalScreeningExcellService();
-		asoPreEmploymentMedicalScreeningExcellService.generateExcelReport(filePath, company);
-
 	}
 
 }

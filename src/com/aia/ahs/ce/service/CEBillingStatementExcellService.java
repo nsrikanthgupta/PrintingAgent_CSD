@@ -38,9 +38,13 @@ import org.springframework.stereotype.Service;
 
 import com.aia.ahs.ce.model.CESummaryStatementExcellData;
 import com.aia.common.db.DBCSDCommon;
+import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.CompanyCode;
+import com.aia.print.agent.service.TemplateActions;
 
-@Service
-public class CEBillingStatementExcellService{
+@Service("cEBillingStatementExcellService")
+public class CEBillingStatementExcellService implements TemplateActions {
 	@Autowired
 	private DBCSDCommon dbcmd;
 	
@@ -53,7 +57,7 @@ public class CEBillingStatementExcellService{
 	Integer companyCode;
 	private static final String docType = "CEBSE";
 	private String tbl_doc_nm;
-	String tableName;
+	private String tableName;
 	private String process_year;
 	private static final String file_format = "xlsx";
 
@@ -72,9 +76,9 @@ public class CEBillingStatementExcellService{
 	
 	private String g4CycleDate;
 	
-	public void generateExcelReport(String filePath, String company) {
-		
-		this.g4CycleDate=getG4CycleDate(filePath).trim();
+	public int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails) {
+
+		this.g4CycleDate = batchCycle.getCycleDate();
 		this.doc_creation_dt=this.ymd.format(new Date(this.g4CycleDate)) ;
 		this.year =this.sdf.format(new Date(this.g4CycleDate));
 		
@@ -82,9 +86,10 @@ public class CEBillingStatementExcellService{
 		this.tbl_doc_nm = "[aiaIMGdb_CSD_" + this.year + "]..[" + this.tableName + "]";
 		this.process_year = this.year;
 
-		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> listDetailsRS = getHeaderDetails(filePath);
+		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> listDetailsRS = getHeaderDetails(batchFileDetails.getFileLocation());
 		HashMap<Integer, List<CESummaryStatementExcellData>> cESummaryStatementExcellDataRS = getCESummaryStatementExcellData(
-				filePath);
+				batchFileDetails.getFileLocation());
+		int documentCount = 0;
 		int noFiles = listDetailsRS.size();
 		for (int i = 0; i < noFiles; i++) {
 			HashMap<Integer, HashMap<String, Object>> detailsRS = listDetailsRS.get(i);
@@ -102,9 +107,8 @@ public class CEBillingStatementExcellService{
 			this.proposal_type = (String) datasource.get("policyType");
 			this.sub_client_no = (String) datasource.get("subsidiaryNum");
 			this.sub_client_name = (String) datasource.get("subsidiary");
-			if (this.sub_client_name.equalsIgnoreCase("-") || this.sub_client_name.isEmpty()
-					|| this.sub_client_name == null) {
-				this.sub_client_name = this.client_name;
+			if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
+				this.sub_client_name=this.client_name;
 			}
 
 //			String billperiod = "" + (String) datasource.get("billMonth");
@@ -113,12 +117,14 @@ public class CEBillingStatementExcellService{
 //			System.out.println("billmonth:" + billmonth);
 			String filename = datasource.get("policyNum") + "_" + datasource.get("billNum") + "_CEBillingStmt.xlsx";
 		
-			uploadExcelReport(listCESummaryStatementExcellData, filename,company);
+			if(this.uploadExcelReport(listCESummaryStatementExcellData, filename,companyCode.getCompanyCode())) {
+				++documentCount;
+			}
 		}
+     return documentCount;
+}
 
-	}
-
-	private void uploadExcelReport(List<CESummaryStatementExcellData> listCESummaryStatementExcellData, String filename,
+	private boolean uploadExcelReport(List<CESummaryStatementExcellData> listCESummaryStatementExcellData, String filename,
 			String company) {
 		String[] column = null;
 		if (company.equalsIgnoreCase("Co3")) {
@@ -130,8 +136,8 @@ public class CEBillingStatementExcellService{
 				"Reason For Excess (1)", "Excess Amount (1) (RM)", "Reason For Excess (2)", "Excess Amount (2) (RM)",
 				"Reason For Excess (3)", "Excess Amount (3) (RM)", "Reason For Excess (4)", "Excess Amount (4) (RM)" };
 		}
-		if (company.equalsIgnoreCase("Co3")) {
-			this.companyCode =3; 
+		if (company.equalsIgnoreCase("Co4")) {
+			this.companyCode =4; 
 		  column =new String[] { "Certificate Number", "Company Name", "Billing Month\n[MM/YYYY]", "Bill Number",
 				"Claim No.", "Employee Name", "Employee \n NRIC/Passport No.", "Employee ID", "Claimant Name",
 				"Membership No. ", "Relationship", "Plan No", "Plan Description", "Product Code", "Product Description",
@@ -205,7 +211,7 @@ public class CEBillingStatementExcellService{
 
 			outputStream = new BufferedOutputStream(new FileOutputStream(file));
 			workbook.write(outputStream);
-			System.out.println("excel created .... :" + file.getAbsolutePath());
+			//System.out.println("excel created .... :" + file.getAbsolutePath());
 
 			byte[] fileContent = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
 
@@ -228,21 +234,24 @@ public class CEBillingStatementExcellService{
 
 		} catch (Exception e) {
 			System.out.println("Exception in CEBillingStatementExcellService.generateExcelReport() :" + e.toString());
+		return false;
 		} finally {
 			try {
-				if (outputStream != null) {
-					outputStream.flush();
-					outputStream.close();
-				}
 				workbook.dispose();
 				if (workbook != null) {
 					workbook.close();
 				}
+				if (outputStream != null) {
+					outputStream.flush();
+					outputStream.close();
+				}
+				
 
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
+		return true;
 	}
 
 	private void createDataRow(CESummaryStatementExcellData data, Row row, CellStyle cellStyle,

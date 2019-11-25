@@ -3,6 +3,7 @@ package com.aia.ahs.aso.service;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -21,10 +22,14 @@ import org.springframework.stereotype.Service;
 
 import com.aia.ahs.aso.model.AsoSummaryStatementExcellData;
 import com.aia.common.db.DBCSDCommon;
+import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.CompanyCode;
+import com.aia.print.agent.service.TemplateActions;
 
 
-@Service
-public class AsoBillingStatementExcellService{
+@Service("asoBillingStatementExcellService")
+public class AsoBillingStatementExcellService implements TemplateActions{
 	@Autowired
 	private DBCSDCommon dbcmd;
 	
@@ -58,47 +63,58 @@ public class AsoBillingStatementExcellService{
 	private String g4CycleDate;
 	
 
-	public void generateExcelReport(String filePath, String company) {
-		this.g4CycleDate=getG4CycleDate(filePath).trim();
-		this.doc_creation_dt=this.ymd.format(new Date(this.g4CycleDate)) ;
-		this.year =this.sdf.format(new Date(this.g4CycleDate));
-		this.tableName = "tbl_asobse_"+this.year;
-		this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
-		this.process_year=year; 
+	public int  genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails) {
+		int documentCount=0;
 		
-		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> listDetailsRS = getHeaderDetails(filePath);
-		HashMap<Integer, List<AsoSummaryStatementExcellData>> listAsoSummaryStatementExcellDataRS = getAsoSummaryStatementExcellData(
-				filePath);
-		int noFiles = listDetailsRS.size();
-		for (int i = 0; i < noFiles; i++) {
-			HashMap<Integer, HashMap<String, Object>> detailsRS = listDetailsRS.get(i);
-			List<AsoSummaryStatementExcellData> listAsoSummaryStatementExcellData = listAsoSummaryStatementExcellDataRS
-					.get(i);
-			HashMap<String, Object> datasource = new HashMap<String, Object>();
-			for (int a = 0; a < detailsRS.size(); a++) {
-				HashMap<String, Object> details = detailsRS.get(a);
-				datasource.putAll(details);
+		try {
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+			this.g4CycleDate = batchCycle.getCycleDate();
+			this.doc_creation_dt = ymd.format(dateFormat.parse(this.g4CycleDate));
+			this.year = sdf.format(dateFormat.parse(this.g4CycleDate));
+			this.tableName = "tbl_asobse_"+this.year;
+			this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
+			this.process_year=year; 
+			
+			HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> listDetailsRS =
+					getHeaderDetails(batchFileDetails.getFileLocation());
+			HashMap<Integer, List<AsoSummaryStatementExcellData>> listAsoSummaryStatementExcellDataRS = 
+					getAsoSummaryStatementExcellData(batchFileDetails.getFileLocation());
+			int noFiles = listDetailsRS.size();
+			for (int i = 0; i < noFiles; i++) {
+				HashMap<Integer, HashMap<String, Object>> detailsRS = listDetailsRS.get(i);
+				List<AsoSummaryStatementExcellData> listAsoSummaryStatementExcellData = listAsoSummaryStatementExcellDataRS
+						.get(i);
+				HashMap<String, Object> datasource = new HashMap<String, Object>();
+				for (int a = 0; a < detailsRS.size(); a++) {
+					HashMap<String, Object> details = detailsRS.get(a);
+					datasource.putAll(details);
 
+				}
+				this.proposalNo = (String) datasource.get("policyNum");
+				this.client_no = (String) datasource.get("policyHolderNum");
+				this.client_name = (String) datasource.get("policyHolder");
+				this.bill_no = (String) datasource.get("billNum");
+				this.proposal_type = (String) datasource.get("policyType");
+				this.sub_client_no = (String) datasource.get("subsidiaryNum");
+				this.sub_client_name = (String) datasource.get("subsidiary");
+				
+				if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
+					this.sub_client_name=this.client_name;
+				}
+				
+				String filename = datasource.get("policyNum") + "_" + datasource.get("billNum") + "_BillingStatement.xlsx";
+				
+				if(this.uploadExcelReport(listAsoSummaryStatementExcellData,filename,companyCode.getCompanyCode())) {;
+				++documentCount;
+				}
 			}
-			this.proposalNo = (String) datasource.get("policyNum");
-			this.client_no = (String) datasource.get("policyHolderNum");
-			this.client_name = (String) datasource.get("policyHolder");
-			this.bill_no = (String) datasource.get("billNum");
-			this.proposal_type = (String) datasource.get("policyType");
-			this.sub_client_no = (String) datasource.get("subsidiaryNum");
-			this.sub_client_name = (String) datasource.get("subsidiary");
-			
-			if(this.sub_client_name.equalsIgnoreCase("-")  || this.sub_client_name.isEmpty() ||this.sub_client_name==null){
-				this.sub_client_name=this.client_name;
-			}
-			
-			String filename = datasource.get("policyNum") + "_" + datasource.get("billNum") + "_BillingStatement.xlsx";
-			
-			uploadExcelReport(listAsoSummaryStatementExcellData,filename,company);
+		} catch (ParseException e) {
+			e.printStackTrace();
 		}
+		return documentCount;
 	}
 
-	private void uploadExcelReport(List<AsoSummaryStatementExcellData> listAsoSummaryStatementExcellData,String filename, String company) {
+	private boolean uploadExcelReport(List<AsoSummaryStatementExcellData> listAsoSummaryStatementExcellData,String filename, String company) {
 		
 		String[] column = null;
 		if (company.equalsIgnoreCase("Co3")) {
@@ -210,6 +226,7 @@ public class AsoBillingStatementExcellService{
 
 		} catch (Exception e) {
 			System.out.println("Exception in AsoBillingStatementExcellService.uploadExcelReport() :" + e.toString());
+		return false;
 		} finally {
 			try {
 				if(outputStream!=null){
@@ -227,6 +244,7 @@ public class AsoBillingStatementExcellService{
 				e.printStackTrace();
 			}
 		}
+		return true;
 	}
 
 	private void createDataRow(AsoSummaryStatementExcellData data, Row row, CellStyle cellStyle,

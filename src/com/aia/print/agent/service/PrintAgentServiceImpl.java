@@ -8,16 +8,17 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,22 +64,17 @@ public class PrintAgentServiceImpl implements PrintAgentService {
     private BatchCycleRepository batchCycleRepository;
 
     /**
-     * batchFileDetailsRepository
-     */
-    @Autowired
-    private BatchFileDetailsRepository batchFileDetailsRepository;
-    
-    
-    /**
      * batchJobConfigRepository
      */
     @Autowired
     private BatchJobConfigRepository batchJobConfigRepository;
-    
 
     /**
-     * reconcilationCode
+     * batchFileDetailsRepository
      */
+    @Autowired
+    private BatchFileDetailsRepository batchFileDetailsRepository;
+
     @Value("${print.agent.reconcilation.code}")
     private String reconcilationCode;
 
@@ -169,6 +165,7 @@ public class PrintAgentServiceImpl implements PrintAgentService {
         batchCycle.setCreatedDate(new Date());
         batchCycle.setCycleDate(code.getLatestCycleDate());
         batchCycle.setStatus("NEW");
+        batchCycle.setCompanyCodeId(code.getCompanyCodeId());
         batchCycleRepository.save(batchCycle);
 
         companyCodeRepository.save(code);
@@ -180,19 +177,14 @@ public class PrintAgentServiceImpl implements PrintAgentService {
     /** {@inheritDoc} */
     @Override
     public List< BatchCycle > getBatchCycles(String status) {
-        List< BatchCycle > list = batchCycleRepository.getLatestBatchCycles(status);
-        if (CollectionUtils.isNotEmpty(list)) {
-            return Arrays.asList(list.get(0));
-        }
-        return null;
+        return batchCycleRepository.getLatestBatchCycles(status);
     }
 
     /** {@inheritDoc} */
     @Override
     public boolean downloadBatchCycles(BatchCycle batchCycle) {
         LOGGER.info("DOWNLOAD PROCESS STARTS FOR THE BATCH  {} ", batchCycle.getBatchId());
-        CompanyCode code = this.getCompanyCode(batchCycle.getCompanyCode());
-        List< BatchFileDetails > list = new ArrayList<>();
+        CompanyCode code = this.getCompanyCode(batchCycle.getCompanyCodeId());
         try {
             AS400 as400 = new AS400(code.getIpAddress(), code.getUsername(), code.getPassword());
             LOGGER.info("CONNECTION ESTABLISHED WITH G400 FOR THE BATCH  {} ", batchCycle.getBatchId());
@@ -219,7 +211,17 @@ public class PrintAgentServiceImpl implements PrintAgentService {
                 if (out != null) {
                     out.close();
                 }
-                list.add(batchFileDetails);
+                Object object = this.readDocumentCount(batchFileDetails.getFileLocation());
+                if (object instanceof java.lang.String) {
+                    batchFileDetails.setExpectedDocumentCount(0);
+                    batchFileDetails.setParseError(object.toString());
+                } else {
+                    batchFileDetails.setExpectedDocumentCount(Integer.parseInt(object.toString()));
+                }
+                if (batchFileDetails.getFileLocation().contains(reconcilationCode)) {
+                    batchFileDetails.setActualDocumentCount(0);
+                }
+                batchFileDetails.setDocumentCode(getDocumentCode(batchFileDetails.getFileName()));
                 batchFileDetailsRepository.save(batchFileDetails);
             }
         } catch (IOException | AS400SecurityException e) {
@@ -230,6 +232,16 @@ public class PrintAgentServiceImpl implements PrintAgentService {
         }
         LOGGER.info("DOWNLOAD PROCESS COMPLETED WITH NO ERROS FOR THE BATCH  {} ", batchCycle.getBatchId());
         return true;
+    }
+
+    private String getDocumentCode(String fileName) {
+        if (org.apache.commons.lang3.StringUtils.isNoneBlank(fileName)) {
+            String[] subsets = fileName.split("_");
+            if (subsets.length >= 2) {
+                return subsets[1];
+            }
+        }
+        return null;
     }
 
     private void verifyLocalDirectory(CompanyCode code, String cycleDate) {
@@ -252,8 +264,12 @@ public class PrintAgentServiceImpl implements PrintAgentService {
      * @return
      */
     @Override
-    public CompanyCode getCompanyCode(String companyCode) {
-        return companyCodeRepository.findById(companyCode).orElse(null);
+    public CompanyCode getCompanyCode(Long companyCodeId) {
+        List<CompanyCode> list = companyCodeRepository.findByCompanyId(companyCodeId);
+        if(CollectionUtils.isNotEmpty(list)) {
+            return list.get(0);
+        }
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -266,8 +282,8 @@ public class PrintAgentServiceImpl implements PrintAgentService {
     @Override
     public boolean verifyBatchCycleExist(String newCycleDate, CompanyCode code) {
         try {
-            // String targetFileName = code.getCompanyCode().concat(reconcilationCode).concat(newCycleDate);
-            String targetFileName = "Co3".concat(reconcilationCode).concat(newCycleDate);
+            String targetFileName = code.getCompanyCode().concat(reconcilationCode).concat(newCycleDate);
+            // String targetFileName = "Co3".concat(reconcilationCode).concat(newCycleDate);
             LOGGER.info("targetFileName file name {} ", targetFileName);
             AS400 as400 = new AS400(code.getIpAddress(), code.getUsername(), code.getPassword());
             IFSFile directory = new IFSFile(as400, code.getFolderPath().concat(newCycleDate));
@@ -287,6 +303,52 @@ public class PrintAgentServiceImpl implements PrintAgentService {
         return false;
     }
 
+    public Object readDocumentCount(String filePath) {
+        if (filePath.contains(reconcilationCode)) {
+            return 0;
+        }
+        ReversedLinesFileReader object = null;
+        try {
+            object = new ReversedLinesFileReader(new File(filePath), Charset.forName("UTF-8"));
+            String lastLine = object.readLine();
+            if (lastLine != null && lastLine.isEmpty()) {
+                lastLine = object.readLine();
+            }
+            if (lastLine != null && !lastLine.isEmpty()) {
+                String[] objects = lastLine.split("\\|");
+                if (objects.length >= 3) {
+                    LOGGER.info(lastLine);
+                    LOGGER.info("filePath {} & Object {} ", filePath, objects[2]);
+                    LOGGER.info("Document Count {} ", getIntegerValue(objects[2]));
+                    return getIntegerValue(objects[2]);
+                } else {
+                    return "No Record Count";
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                object.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return 0;
+    }
+
+    private Object getIntegerValue(String object) {
+        try {
+            if (object.equalsIgnoreCase("Bill no")) {
+                return 0;
+            }
+            return Integer.parseInt(object);
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override
     public List< BatchFileDetails > getBatchFileDetails(Long batchId) {
@@ -296,8 +358,8 @@ public class PrintAgentServiceImpl implements PrintAgentService {
     /** {@inheritDoc} */
     @Override
     public BatchJobConfig getBatchJobConfigByKey(String jobKey) {
-        List<BatchJobConfig> list = batchJobConfigRepository.getBatchJobConfigByKey(jobKey);
-        if(CollectionUtils.isNotEmpty(list)) {
+        List< BatchJobConfig > list = batchJobConfigRepository.getBatchJobConfigByKey(jobKey);
+        if (CollectionUtils.isNotEmpty(list)) {
             return list.get(0);
         }
         return null;

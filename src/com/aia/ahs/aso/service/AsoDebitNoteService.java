@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -95,52 +96,58 @@ public class AsoDebitNoteService implements TemplateActions {
     @Override
     public int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails) {
 
-        if (batchFileDetails.getStatus().equalsIgnoreCase("RECONCILIATION_SUCCESS")) {
-            LOGGER.info("RECONCILIATION PROCESS COMPLETED FOR THE FILENAME {} AND FOR THE CYCLE DATE {}",
-                batchFileDetails.getFileName(), batchCycle.getCycleDate());
-            return -1;
-        }
+    	int documentCount = 0;
+        try {
+			if (batchFileDetails.getStatus().equalsIgnoreCase("RECONCILIATION_SUCCESS")) {
+			    LOGGER.info("RECONCILIATION PROCESS COMPLETED FOR THE FILENAME {} AND FOR THE CYCLE DATE {}",
+			        batchFileDetails.getFileName(), batchCycle.getCycleDate());
+			    return -1;
+			}
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+			this.g4CycleDate = batchCycle.getCycleDate();
+			this.doc_creation_dt = ymd.format(dateFormat.parse(this.g4CycleDate));
+			this.year = sdf.format(dateFormat.parse(this.g4CycleDate));
+			this.tableName = "tbl_asodn_" + this.year;
+			this.tbl_doc_nm = "[aiaIMGdb_CSD_" + this.year + "]..[" + this.tableName + "]";
+			this.process_year = this.year;
 
-        this.g4CycleDate = batchCycle.getCycleDate();
-        this.doc_creation_dt = ymd.format(new Date(this.g4CycleDate));
-        this.year = sdf.format(new Date(this.g4CycleDate));
-        this.tableName = "tbl_asodn_" + this.year;
-        this.tbl_doc_nm = "[aiaIMGdb_CSD_" + this.year + "]..[" + this.tableName + "]";
-        this.process_year = this.year;
+			HashMap< Integer , HashMap< Integer , HashMap< String , Object > > > asoDebitNoteRSDetails =
+			    getAsoDebitNoteDetails(batchFileDetails.getFileLocation());
+			int noFiles = asoDebitNoteRSDetails.size();
+			for (int i = 0; i < noFiles; i++) {
+			    HashMap< Integer , HashMap< String , Object > > asoDebitNoteRS = asoDebitNoteRSDetails.get(i);
 
-        HashMap< Integer , HashMap< Integer , HashMap< String , Object > > > asoDebitNoteRSDetails =
-            getAsoDebitNoteDetails(batchFileDetails.getFileLocation());
+			    HashMap< String , Object > dataSource = new HashMap< String , Object >();
+			    for (int a = 0; a < asoDebitNoteRS.size(); a++) {
+			        dataSource.putAll(asoDebitNoteRS.get(a));
+			    }
 
-        int noFiles = asoDebitNoteRSDetails.size();
-        for (int i = 0; i < noFiles; i++) {
-            HashMap< Integer , HashMap< String , Object > > asoDebitNoteRS = asoDebitNoteRSDetails.get(i);
+			    this.proposalNo = (String) dataSource.get("policyNum");
+			    this.client_no = (String) dataSource.get("policyHolderNum");
+			    this.client_name = (String) dataSource.get("policyHolder");
+			    this.bill_no = (String) dataSource.get("billNum");
 
-            HashMap< String , Object > dataSource = new HashMap< String , Object >();
-            for (int a = 0; a < asoDebitNoteRS.size(); a++) {
-                dataSource.putAll(asoDebitNoteRS.get(a));
-            }
+			    this.proposal_type = (String) dataSource.get("policyType");
+			    this.sub_client_no = (String) dataSource.get("subsidiaryNum");
+			    this.sub_client_name = (String) dataSource.get("subsidiary");
+			    if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
+					this.sub_client_name=this.client_name;
+				}
+			    this.indicator = (String) dataSource.get("printHardCp");
 
-            this.proposalNo = (String) dataSource.get("policyNum");
-            this.client_no = (String) dataSource.get("policyHolderNum");
-            this.client_name = (String) dataSource.get("policyHolder");
-            this.bill_no = (String) dataSource.get("billNum");
+			    if(this.uploadReport(dataSource, companyCode.getCompanyCode())) {
+					++documentCount;
+				}
+			}
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
 
-            this.proposal_type = (String) dataSource.get("policyType");
-            this.sub_client_no = (String) dataSource.get("subsidiaryNum");
-            this.sub_client_name = (String) dataSource.get("subsidiary");
-            if (this.sub_client_name.equalsIgnoreCase("-") || this.sub_client_name.isEmpty() || this.sub_client_name == null) {
-                this.sub_client_name = this.client_name;
-            }
-            this.indicator = (String) dataSource.get("printHardCp");
-
-            uploadReport(dataSource, companyCode.getCompanyCode());
-        }
-
-        return noFiles;
+        return documentCount;
 
     }
 
-    public synchronized void uploadReport(HashMap< String , Object > dataSource, String companyCode) {
+    public  boolean uploadReport(HashMap< String , Object > dataSource, String companyCode) {
 
         FileInputStream inputStream = null;
         BufferedOutputStream outputStream = null;
@@ -215,6 +222,7 @@ public class AsoDebitNoteService implements TemplateActions {
 
         } catch (Exception e) {
             System.out.println("Exception occurred : " + e);
+            return false;
         } finally {
             try {
                 if (outputStream != null) {
@@ -230,6 +238,7 @@ public class AsoDebitNoteService implements TemplateActions {
                 e.printStackTrace();
             }
         }
+        return true;
     }
 
     public HashMap< Integer , HashMap< Integer , HashMap< String , Object > > > getAsoDebitNoteDetails(String filePath) {

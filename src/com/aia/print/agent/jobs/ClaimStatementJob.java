@@ -12,30 +12,41 @@ import org.springframework.beans.factory.annotation.Qualifier;
 
 import com.aia.ahs.aso.model.SympNotification;
 import com.aia.ahs.aso.service.ClaimStatementService;
+import com.aia.print.agent.entiry.BatchJobConfig;
+import com.aia.print.agent.service.PrintAgentService;
 
 public class ClaimStatementJob implements Job {
-    @Autowired
-    @Qualifier("claimStatementService")
-    private ClaimStatementService claimStatementService;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ClaimStatementJob.class);
+	@Autowired
+	@Qualifier("claimStatementService")
+	private ClaimStatementService claimStatementService;
 
-    boolean start = true;
+	@Autowired
+	@Qualifier("printAgentService")
+	private PrintAgentService printAgentService;
 
-    long count = 0;
+	private static final Logger LOGGER = LoggerFactory.getLogger(ClaimStatementJob.class);
+	boolean start = true;
+	long count = 0;
 
-    @Override
-    public void execute(JobExecutionContext context) throws JobExecutionException {
-        LOGGER.info("ClaimStatementJob is Triggered..........................................................!");
-        List< SympNotification > list = this.claimStatementService.getRequestforDownloadFromSumyfap00021DB();
+	@Override
+	public void execute(JobExecutionContext context) throws JobExecutionException {
+		LOGGER.info("ClaimStatementJob is Triggered..........................................................!");
+		BatchJobConfig batchJobConfig = printAgentService.getBatchJobConfigByKey("ClaimStatementJob");
+		if (batchJobConfig != null && batchJobConfig.getStatus().equalsIgnoreCase("ACTIVE")) {
+			List<SympNotification> list = this.claimStatementService.getRequestforDownloadFromSumyfap00021DB();
+			/*
+			 * if (list != null && list.size()!=0 && !list.isEmpty()) {
+			 * LOGGER.info("Request Size............!  "+list.size());
+			 * this.claimStatementService.startReportGen(list); }else {
+			 * LOGGER.info("No Download Request.............!"); }
+			 */
 
-        /*
-         * if (list != null && list.size()!=0 && !list.isEmpty()) { LOGGER.info("Request Size............!  "+list.size());
-         * this.claimStatementService.startReportGen(list); }else { LOGGER.info("No Download Request.............!"); }
-         */
+			// this.claimStatementGmmService.testReportGeneration();
+		} else {
+			LOGGER.info("JOB IS INACTIVE");
+		}
 
-        // this.claimStatementGmmService.testReportGeneration();
-
-    }
+	}
 
 }

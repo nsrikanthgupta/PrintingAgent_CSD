@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import com.aia.print.agent.entiry.BatchJobConfig;
 import com.aia.print.agent.entiry.CompanyCode;
 import com.aia.print.agent.service.PrintAgentService;
 
@@ -40,33 +41,39 @@ public class CheckCyleDateJob implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		LOGGER.info("CheckCyleDateJob Triggerd");
-		List<CompanyCode> companyCodes = printAgentService.getActiveCompanyCodeList();
-		if (CollectionUtils.isEmpty(companyCodes)) {
-			LOGGER.info("NO ACTIVE CONFGIURATIONS TO PROCESS");
-		} else {
-			for (CompanyCode code : companyCodes) {
-				boolean verifyConnectivity = printAgentService.checkConnectivity(code);
-				if (verifyConnectivity) {
-					String newCycleDate = printAgentService.checkForNewCyle(code);
-					if (StringUtils.isEmpty(newCycleDate)) {
-						LOGGER.info("LATEST CYCLE IS NOT AVAILABLE FOR {} ", code.getCompanyCode());
-					} else {
-						boolean readyToDownload = printAgentService.verifyBatchCycleExist(newCycleDate, code);
-						if (readyToDownload) {
-							LOGGER.info("LATEST CYCLE IS AVAILABLE FOR {} AND IT IS {} ", code.getCompanyCode(),
-									newCycleDate);
-							code.setLatestCycleDate(newCycleDate);
-							printAgentService.triggerNewBatchCycle(code);
-						} else {
+
+		BatchJobConfig batchJobConfig = printAgentService.getBatchJobConfigByKey("CheckCyleDateJob");
+		if (batchJobConfig != null && batchJobConfig.getStatus().equalsIgnoreCase("ACTIVE")) {
+			List<CompanyCode> companyCodes = printAgentService.getActiveCompanyCodeList();
+			if (CollectionUtils.isEmpty(companyCodes)) {
+				LOGGER.info("NO ACTIVE CONFGIURATIONS TO PROCESS");
+			} else {
+				for (CompanyCode code : companyCodes) {
+					boolean verifyConnectivity = printAgentService.checkConnectivity(code);
+					if (verifyConnectivity) {
+						String newCycleDate = printAgentService.checkForNewCyle(code);
+						if (StringUtils.isEmpty(newCycleDate)) {
 							LOGGER.info("LATEST CYCLE IS NOT AVAILABLE FOR {} ", code.getCompanyCode());
+						} else {
+							boolean readyToDownload = printAgentService.verifyBatchCycleExist(newCycleDate, code);
+							if (readyToDownload) {
+								LOGGER.info("LATEST CYCLE IS AVAILABLE FOR {} AND IT IS {} ", code.getCompanyCode(),
+										newCycleDate);
+								code.setLatestCycleDate(newCycleDate);
+								printAgentService.triggerNewBatchCycle(code);
+							} else {
+								LOGGER.info("LATEST CYCLE IS NOT AVAILABLE FOR {} ", code.getCompanyCode());
+							}
 						}
+					} else {
+						/**
+						 * Trigger Email
+						 */
 					}
-				} else {
-					/**
-					 * Trigger Email
-					 */
 				}
 			}
+		} else {
+			LOGGER.info("JOB IS INACTIVE");
 		}
 	}
 

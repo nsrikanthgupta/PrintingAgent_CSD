@@ -18,5 +18,6 @@ import com.aia.print.agent.entiry.CompanyCode;
 public interface TemplateActions {
 
     int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails);
+    
 
 }

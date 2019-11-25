@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.util.CollectionUtils;
 
 import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchJobConfig;
 import com.aia.print.agent.service.PrintAgentService;
 
 /**
@@ -42,30 +43,35 @@ public class FileDownloadJob implements Job {
 	@Override
 	public void execute(JobExecutionContext context) throws JobExecutionException {
 		LOGGER.info("FILEDOWNLOADJOB TRIGGERD");
-
-		List<BatchCycle> batchCycles = printAgentService.getBatchCycles("NEW");
-		if (CollectionUtils.isEmpty(batchCycles)) {
-			LOGGER.info("THERE ARE NO ACTIVE CYCLES ");
-		} else {
-			LOGGER.info("FOUND BATCH CYCLES {} ", batchCycles.size());
-			for (BatchCycle batchCycle : batchCycles) {
-				batchCycle.setStatus("DOWNLOAD_INPROGRESS");
-				batchCycle.setUpdatedDate(new Date());
-				printAgentService.updateBatchCycle(batchCycle);
-				boolean status = printAgentService.downloadBatchCycles(batchCycle);
-				if (status) {
-					batchCycle.setStatus("DOWNLOADED");
-				} else {
-					batchCycle.setStatus("DOWNLOAD_FAILED");
-					/**
-					 * Trigger Email for Failed Scenario
-					 */
+		BatchJobConfig batchJobConfig = printAgentService.getBatchJobConfigByKey("FileDownloadJob");
+		if (batchJobConfig != null && batchJobConfig.getStatus().equalsIgnoreCase("ACTIVE")) {
+			List<BatchCycle> batchCycles = printAgentService.getBatchCycles("NEW");
+			if (CollectionUtils.isEmpty(batchCycles)) {
+				LOGGER.info("THERE ARE NO ACTIVE CYCLES ");
+			} else {
+				LOGGER.info("FOUND BATCH CYCLES {} ", batchCycles.size());
+				for (BatchCycle batchCycle : batchCycles) {
+					batchCycle.setStatus("DOWNLOAD_INPROGRESS");
+					batchCycle.setUpdatedDate(new Date());
+					printAgentService.updateBatchCycle(batchCycle);
+					boolean status = printAgentService.downloadBatchCycles(batchCycle);
+					if (status) {
+						batchCycle.setStatus("DOWNLOADED");
+					} else {
+						batchCycle.setStatus("DOWNLOAD_FAILED");
+						/**
+						 * Trigger Email for Failed Scenario
+						 */
+					}
+					batchCycle.setUpdatedDate(new Date());
+					printAgentService.updateBatchCycle(batchCycle);
 				}
-				batchCycle.setUpdatedDate(new Date());
-				printAgentService.updateBatchCycle(batchCycle);
 			}
+
+		} else
+
+		{
+			LOGGER.info("FileDownloadJob is INACTIVE ");
 		}
-
 	}
-
 }

@@ -9,29 +9,36 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.aia.ahs.aso.model.SummaryReportExxonmobilTable;
 import com.aia.common.db.DBCSDCommon;
+import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.CompanyCode;
+import com.aia.print.agent.service.TemplateActions;
 
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 
-@Service 
-public class AsoGMEXSummaryReportExxonMobilService {
+@Service("asoGMEXSummaryReportExxonMobilService")
+public class AsoGMEXSummaryReportExxonMobilService implements TemplateActions{
+	 private static final Logger LOGGER = LoggerFactory.getLogger(AsoGMEXSummaryReportExxonMobilService.class);
 
 	@Autowired
 	private DBCSDCommon dbcmd;
@@ -70,44 +77,55 @@ public class AsoGMEXSummaryReportExxonMobilService {
 	private String indicator;
 	private String g4CycleDate;
 	    
-	public void genReport(String fileName, String companyCode) {
-		this.g4CycleDate=getG4CycleDate(fileName).trim();
-		this.doc_creation_dt=ymd.format(new Date(this.g4CycleDate)) ;
-		this.year =sdf.format(new Date(this.g4CycleDate));
-		this.tableName = "tbl_gmexsr_"+this.year;
-		this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
-		this.process_year=this.year; 
+	public int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails)  {
+		int documentCount = 0;
 		
-		this.getmedicalcostMonth(fileName);
-		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> asoCreditNoteRSDetails = getSummaryReportExxonMobilePolicyDetails(fileName);
-		HashMap<Integer, List<SummaryReportExxonmobilTable>> summaryReportExxonMobilTableListDetails = getSummaryReportExxonMobileTableDetails(fileName);
-		int noFiles = asoCreditNoteRSDetails.size();
-		for (int i = 0; i < noFiles; i++) {
-			HashMap<Integer, HashMap<String, Object>> asoCreditNoteRS = asoCreditNoteRSDetails.get(i);
+		try {
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+			this.g4CycleDate = batchCycle.getCycleDate();
+			this.doc_creation_dt = ymd.format(dateFormat.parse(this.g4CycleDate));
+			this.year = sdf.format(dateFormat.parse(this.g4CycleDate));
+			this.tableName = "tbl_gmexsr_"+this.year;
+			this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
+			this.process_year=this.year; 
+			
+			this.getmedicalcostMonth(batchFileDetails.getFileLocation());
+			
+			HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> asoCreditNoteRSDetails = getSummaryReportExxonMobilePolicyDetails(batchFileDetails.getFileLocation());
+			HashMap<Integer, List<SummaryReportExxonmobilTable>> summaryReportExxonMobilTableListDetails = getSummaryReportExxonMobileTableDetails(batchFileDetails.getFileLocation());
+			int noFiles = asoCreditNoteRSDetails.size();
+			for (int i = 0; i < noFiles; i++) {
+				HashMap<Integer, HashMap<String, Object>> asoCreditNoteRS = asoCreditNoteRSDetails.get(i);
 
-			HashMap<String, Object> dataSource = new HashMap<String, Object>();
-			for (int a = 0; a < asoCreditNoteRS.size(); a++) {
-				dataSource.putAll(asoCreditNoteRS.get(a));
-			}
-			this.proposalNo=(String) dataSource.get("policyNum");
-			this.bill_no=(String) dataSource.get("billNum");
-			
-			this.proposal_type=(String) dataSource.get("policyType");
-			this.sub_client_no=(String) dataSource.get("subsidiaryNum");
-			this.sub_client_name=(String) dataSource.get("subsidiary");
-			
-			if(this.sub_client_name.equalsIgnoreCase("-")  || this.sub_client_name.isEmpty() ||this.sub_client_name==null){
-				this.sub_client_name=this.client_name;
-			}
-			this.indicator=(String) dataSource.get("printHardCp");
-			
-			dataSource.put("medicalcostMonth", medicalcostMonth);
-			dataSource.put("summaryReportExxonmobilTableList", summaryReportExxonMobilTableListDetails.get(i));
-			this.uploadReport(dataSource,companyCode);
+				HashMap<String, Object> dataSource = new HashMap<String, Object>();
+				for (int a = 0; a < asoCreditNoteRS.size(); a++) {
+					dataSource.putAll(asoCreditNoteRS.get(a));
+				}
+				this.proposalNo=(String) dataSource.get("policyNum");
+				this.bill_no=(String) dataSource.get("billNum");
+				
+				this.proposal_type=(String) dataSource.get("policyType");
+				this.sub_client_no=(String) dataSource.get("subsidiaryNum");
+				this.sub_client_name=(String) dataSource.get("subsidiary");
+				
+				if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
+					this.sub_client_name=this.client_name;
+				}
+				this.indicator=(String) dataSource.get("printHardCp");
+				
+				dataSource.put("medicalcostMonth", medicalcostMonth);
+				dataSource.put("summaryReportExxonmobilTableList", summaryReportExxonMobilTableListDetails.get(i));
+				if(this.uploadReport(dataSource, companyCode.getCompanyCode())) {
+					++documentCount;
+				}
 
+			}
+		} catch (ParseException e) {
+			e.printStackTrace();
 		}
+		return documentCount;
 	}
-	public synchronized void uploadReport(HashMap<String, Object> dataSource,String companyCode) {
+	public boolean uploadReport(HashMap<String, Object> dataSource,String companyCode) {
 		 
 		
 		FileInputStream inputStream=null;
@@ -178,6 +196,7 @@ public class AsoGMEXSummaryReportExxonMobilService {
 			
 		} catch (Exception e) {
 			System.out.println("Exception occurred : " + e);
+			return false;
 		} finally {
 			try {
 				if(outputStream!=null){
@@ -194,6 +213,7 @@ public class AsoGMEXSummaryReportExxonMobilService {
 				e.printStackTrace();
 			}
 		}
+		return true;
 	}
 	public void getmedicalcostMonth(String filename){
 		

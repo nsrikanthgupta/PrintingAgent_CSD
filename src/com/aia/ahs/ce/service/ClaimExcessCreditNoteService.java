@@ -19,15 +19,21 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import com.aia.common.db.DBCSDCommon;
+import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.CompanyCode;
+import com.aia.print.agent.service.TemplateActions;
 
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 
-public class ClaimExcessCreditNoteService{
+@Service("claimExcessCreditNoteService")
+public class ClaimExcessCreditNoteService implements TemplateActions {
 	@Autowired
 	private DBCSDCommon dbcmd;
 	
@@ -66,15 +72,17 @@ public class ClaimExcessCreditNoteService{
 
 	
 
-	public synchronized void genReport(String filePath,String companyCode) {
-		this.g4CycleDate=getG4CycleDate(filePath).trim();
+	@Override
+	public int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails) {
+	this.g4CycleDate=batchCycle.getCycleDate();
 		this.doc_creation_dt=ymd.format(new Date(this.g4CycleDate)) ;
 		this.year =sdf.format(new Date(this.g4CycleDate));
 		this.tableName = "tbl_cecn_"+this.year;
 		this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
 		this.process_year=this.year; 
 		
-		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> ceCreditNoteRSDetails = getCECreditNoteDetails(filePath);
+		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> ceCreditNoteRSDetails = getCECreditNoteDetails(batchFileDetails.getFileLocation());
+		int documentCount = 0;
 		int noFiles = ceCreditNoteRSDetails.size();
 		for (int i = 0; i < noFiles; i++) {
 			
@@ -90,16 +98,19 @@ public class ClaimExcessCreditNoteService{
 			this.proposal_type=(String) dataSource.get("policyType");
 			this.sub_client_no=(String) dataSource.get("subsidiaryNum");
 			this.sub_client_name=(String) dataSource.get("subsidiary");
-			if(this.sub_client_name.equalsIgnoreCase("-")  || this.sub_client_name.isEmpty() ||this.sub_client_name==null){
+			if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
 				this.sub_client_name=this.client_name;
 			}
 			this.indicator=(String) dataSource.get("printHardCp");
-	    	uploadReport(dataSource,companyCode);
-			uploadReport(dataSource,companyCode);
+	    	if(this.uploadReport(dataSource,companyCode.getCompanyCode())) {
+	    	++documentCount;	
+	    	}
+			
 		}
+		return documentCount;
 	}
 
-	public synchronized void uploadReport(HashMap<String, Object> dataSource,String companyCode) {
+	public boolean uploadReport(HashMap<String, Object> dataSource,String companyCode) {
 		FileInputStream inputStream=null;
 		BufferedOutputStream outputStream =null;
 		try {
@@ -133,14 +144,13 @@ public class ClaimExcessCreditNoteService{
 			File dir=new File(pdfFullOutputPath);
 			 if (!dir.exists()) {
 		            if (dir.mkdirs()) {
-		                System.out.println("directories are created! "+pdfFullOutputPath);
+		                System.out.println("directories are created! "+dir.getAbsolutePath());
 		            } else {
 		            	System.out.println("failed to create directories ! "+pdfFullOutputPath);
 		            	
 		            }
 			 }
 			
-			 //System.out.println("PDF name ================>:"+pdfname);
 				File file=new File(dir.getAbsolutePath()+"/"+pdfname);
 				if(!file.exists()) {
 					file.createNewFile();
@@ -172,18 +182,17 @@ public class ClaimExcessCreditNoteService{
 					 client_no,client_name,bill_no,bill_type,sub_client_no,sub_client_name,file_format,proposal_type,this.indicator,page_count);
              }
 			
-				
-			
 	
 		} catch (Exception e) {
 			System.out.println("Exception occurred : " + e);
+			return false;
 		} finally {
 			try {
 				if(inputStream!=null){
 					inputStream.close();
 				}
 				if(outputStream!=null){
-					outputStream.flush();
+				   outputStream.flush();
 				   outputStream.close();
 				}
 			} catch (IOException e) {
@@ -191,6 +200,7 @@ public class ClaimExcessCreditNoteService{
 				e.printStackTrace();
 			}
 		}
+		return true;
 	}
 
 	HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> getCECreditNoteDetails(String filePath) {
@@ -311,7 +321,6 @@ public class ClaimExcessCreditNoteService{
 				}
 				
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}

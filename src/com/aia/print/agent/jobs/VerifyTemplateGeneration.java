@@ -46,18 +46,24 @@ public class VerifyTemplateGeneration implements Job {
     @Override
     public void execute(JobExecutionContext arg0) throws JobExecutionException {
         LOGGER.debug("VerifyTemplateGeneration Triggered");
-        BatchJobConfig batchJobConfig = printAgentService.getBatchJobConfigByKey("VerifyReconcileData");
+        BatchJobConfig batchJobConfig = printAgentService.getBatchJobConfigByKey("VerifyTemplateGeneration");
         if (batchJobConfig != null && batchJobConfig.getStatus().equalsIgnoreCase("ACTIVE")) {
-            List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TEMPLATE_GENERATION_INPROGRESS");
+            List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TMPL_GENERATION_INPROGRESS");
             if (CollectionUtils.isEmpty(batchCycles)) {
                 LOGGER.info("THERE ARE NO BATCH CYCLES WITH DOWNLOADED STATUS");
             } else {
                 for (BatchCycle batchCycle : batchCycles) {
+                	LOGGER.info("found batch cycle {} ", batchCycle.getCycleDate());
                     int status = batchReconciliationService.verifyTemplateGeneration(batchCycle);
                     if (status == 1) {
                         batchCycle.setUpdatedDate(new Date());
-                        batchCycle.setUpdatedBy("SD");
-                        batchCycle.setStatus("TMPl_GENERATION_COMPLETED");
+                        batchCycle.setUpdatedBy("PrintingAgent_CSD");
+                        batchCycle.setStatus("TMPL_GENERATION_COMPLETED");
+                        printAgentService.updateBatchCycle(batchCycle);
+                    } else  if (status == 0) {
+                    	batchCycle.setUpdatedDate(new Date());
+                        batchCycle.setUpdatedBy("PrintingAgent_CSD");
+                        batchCycle.setStatus("TMPL_GENERATION_FAILED");
                         printAgentService.updateBatchCycle(batchCycle);
                     }
                 }

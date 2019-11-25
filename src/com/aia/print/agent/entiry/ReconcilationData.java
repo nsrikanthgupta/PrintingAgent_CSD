@@ -18,33 +18,39 @@ import javax.persistence.TemporalType;
 
 /**
  * 
- * @author Srikanth Neerumalla
- * @DateTime 5 Oct 2019 12:19:33 pm
+ * @author Srikanth Neerumalla 
+ * @DateTime 25 Nov 2019 6:09:24 am
  */
 @Entity
-@Table(name = "tbl_BatchCycle")
-public class BatchCycle {
+@Table(name = "tbl_ReconcilationData")
+public class ReconcilationData {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "BatchIdSequence")
-    @SequenceGenerator(name = "BatchIdSequence", initialValue = 1000)
-    private Long batchId;
-
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "ReconcilationDataIdSequence")
+    @SequenceGenerator(name = "ReconcilationDataIdSequence", initialValue = 1000)
+    private Long reconcilationId;
+    
     @Column
     private String companyCode;
-
+    
     @Column
-    private Long companyCodeId;
-
+    private String PolicyNo;
+    
     @Column
-    private String status;
-
+    private String BillNo;
+    
     @Column
-    private String cycleDate;
-
+    private String CycleDate;
+    
     @Column
-    private String remarks;
-
+    private String SubsidaryNo;
+    
+    @Column
+    private String TotalNo;
+    
+    @Column
+    private Long batchId;
+    
     @Column
     private String createdBy;
 
@@ -52,50 +58,40 @@ public class BatchCycle {
     private String updatedBy;
 
     @Column
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date updatedDate;
 
     @Column
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date createdDate;
 
     /**
      * 
      */
-    public BatchCycle() {
+    public ReconcilationData() {
         super();
     }
 
-    /**
-     * @param batchId
-     * @param companyCode
-     * @param status
-     * @param cycleDate
-     */
-    public BatchCycle(Long batchId, String companyCode, String status, String cycleDate) {
-        super();
+    public ReconcilationData(Long batchId) {
         this.batchId = batchId;
-        this.companyCode = companyCode;
-        this.status = status;
-        this.cycleDate = cycleDate;
     }
 
     /**
-     * Returns the batchId.
+     * Returns the reconcilationId.
      * 
-     * @return the batchId.
+     * @return the reconcilationId.
      */
-    public Long getBatchId() {
-        return batchId;
+    public Long getReconcilationId() {
+        return reconcilationId;
     }
 
     /**
-     * Sets the batchId.
+     * Sets the reconcilationId.
      * 
-     * @param batchId the batchId
+     * @param reconcilationId the reconcilationId
      */
-    public void setBatchId(Long batchId) {
-        this.batchId = batchId;
+    public void setReconcilationId(Long reconcilationId) {
+        this.reconcilationId = reconcilationId;
     }
 
     /**
@@ -117,21 +113,39 @@ public class BatchCycle {
     }
 
     /**
-     * Returns the status.
+     * Returns the policyNo.
      * 
-     * @return the status.
+     * @return the policyNo.
      */
-    public String getStatus() {
-        return status;
+    public String getPolicyNo() {
+        return PolicyNo;
     }
 
     /**
-     * Sets the status.
+     * Sets the policyNo.
      * 
-     * @param status the status
+     * @param policyNo the policyNo
      */
-    public void setStatus(String status) {
-        this.status = status;
+    public void setPolicyNo(String policyNo) {
+        PolicyNo = policyNo;
+    }
+
+    /**
+     * Returns the billNo.
+     * 
+     * @return the billNo.
+     */
+    public String getBillNo() {
+        return BillNo;
+    }
+
+    /**
+     * Sets the billNo.
+     * 
+     * @param billNo the billNo
+     */
+    public void setBillNo(String billNo) {
+        BillNo = billNo;
     }
 
     /**
@@ -140,7 +154,7 @@ public class BatchCycle {
      * @return the cycleDate.
      */
     public String getCycleDate() {
-        return cycleDate;
+        return CycleDate;
     }
 
     /**
@@ -149,25 +163,61 @@ public class BatchCycle {
      * @param cycleDate the cycleDate
      */
     public void setCycleDate(String cycleDate) {
-        this.cycleDate = cycleDate;
+        CycleDate = cycleDate;
     }
 
     /**
-     * Returns the remarks.
+     * Returns the subsidaryNo.
      * 
-     * @return the remarks.
+     * @return the subsidaryNo.
      */
-    public String getRemarks() {
-        return remarks;
+    public String getSubsidaryNo() {
+        return SubsidaryNo;
     }
 
     /**
-     * Sets the remarks.
+     * Sets the subsidaryNo.
      * 
-     * @param remarks the remarks
+     * @param subsidaryNo the subsidaryNo
      */
-    public void setRemarks(String remarks) {
-        this.remarks = remarks;
+    public void setSubsidaryNo(String subsidaryNo) {
+        SubsidaryNo = subsidaryNo;
+    }
+
+    /**
+     * Returns the totalNo.
+     * 
+     * @return the totalNo.
+     */
+    public String getTotalNo() {
+        return TotalNo;
+    }
+
+    /**
+     * Sets the totalNo.
+     * 
+     * @param totalNo the totalNo
+     */
+    public void setTotalNo(String totalNo) {
+        TotalNo = totalNo;
+    }
+
+    /**
+     * Returns the batchId.
+     * 
+     * @return the batchId.
+     */
+    public Long getBatchId() {
+        return batchId;
+    }
+
+    /**
+     * Sets the batchId.
+     * 
+     * @param batchId the batchId
+     */
+    public void setBatchId(Long batchId) {
+        this.batchId = batchId;
     }
 
     /**
@@ -241,24 +291,7 @@ public class BatchCycle {
     public void setCreatedDate(Date createdDate) {
         this.createdDate = createdDate;
     }
-
-    /**
-     * Returns the companyCodeId.
-     * 
-     * @return the companyCodeId.
-     */
-    public Long getCompanyCodeId() {
-        return companyCodeId;
-    }
-
-    /**
-     * Sets the companyCodeId.
-     * 
-     * @param companyCodeId the companyCodeId
-     */
-    public void setCompanyCodeId(Long companyCodeId) {
-        this.companyCodeId = companyCodeId;
-    }
     
-
+    
+    
 }

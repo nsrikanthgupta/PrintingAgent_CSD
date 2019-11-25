@@ -9,29 +9,38 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.aia.ahs.aso.model.AsoSummaryBillingStatementTableData;
 import com.aia.common.db.DBCSDCommon;
+import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.CompanyCode;
+import com.aia.print.agent.service.TemplateActions;
 
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
-@Service
-public class AsoSummaryBillingStatementService{
+@Service("asoSummaryBillingStatementService")
+public class AsoSummaryBillingStatementService implements TemplateActions  {
+	
+	 private static final Logger LOGGER = LoggerFactory.getLogger(AsoSummaryBillingStatementService.class);
+
+	
 	@Autowired
 	private DBCSDCommon dbcmd;
 	
@@ -66,48 +75,57 @@ public class AsoSummaryBillingStatementService{
 	private String indicator;
 	private String  g4CycleDate;
 	
-	public  void genReport(String filepath,String companyCode){
-		this.g4CycleDate=getG4CycleDate(filepath).trim();
-		this.doc_creation_dt=ymd.format(new Date(this.g4CycleDate)) ;
-		this.year =sdf.format(new Date(this.g4CycleDate));
-		this.tableName = "tbl_asosbs_"+this.year;
-		this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
-		this.process_year=this.year; 
+	public int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails)  {
+		int documentCount=0;
 		
-		
-		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> asoSummaryStatementRSDetails=getAsoSummaryStatementDetails(filepath);
-		HashMap<Integer, List<AsoSummaryBillingStatementTableData>> asoSummaryStatementListDetails=getAsoSummaryStatementTableData(filepath);
-		int noFiles=asoSummaryStatementRSDetails.size();
-		    for(int i=0; i<noFiles;i++){
-		    	HashMap<Integer, HashMap<String, Object>> asoSummaryStatementRS=asoSummaryStatementRSDetails.get(i);
-		    	List<AsoSummaryBillingStatementTableData> asoSummaryStatementList=asoSummaryStatementListDetails.get(i);
-		       HashMap<String, Object> dataSource=new HashMap<String, Object>();
-		    	for(int a=0;a<asoSummaryStatementRS.size();a++){
-		    	        dataSource.putAll(asoSummaryStatementRS.get(a));
-		    	}
-		    	
-		    	dataSource.put("asoSummaryStatementList", asoSummaryStatementList);
-		    
-		      	this.proposalNo=(String) dataSource.get("policyNum");
-				this.client_no=(String) dataSource.get("policyHolderNum");
-				this.client_name=(String) dataSource.get("policyHolder");
-				this.bill_no=(String) dataSource.get("billNum");
-				
-				this.proposal_type=(String) dataSource.get("policyType");
-				this.sub_client_no=(String) dataSource.get("subsidiaryNum");
-				this.sub_client_name=(String) dataSource.get("subsidiary");
-				this.indicator=(String) dataSource.get("printHardCp");
-				if(this.sub_client_name.equalsIgnoreCase("-")  || this.sub_client_name.isEmpty() ||this.sub_client_name==null){
-					this.sub_client_name=this.client_name;
-				}
-		    	uploadReport(dataSource,companyCode);
-		    	
-		    }
-		
+		try {
+			SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+			this.g4CycleDate = batchCycle.getCycleDate();
+			this.doc_creation_dt = ymd.format(dateFormat.parse(this.g4CycleDate));
+			this.year = sdf.format(dateFormat.parse(this.g4CycleDate));
+			this.tableName = "tbl_asosbs_"+this.year;
+			this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
+			this.process_year=this.year; 
+			
+			
+			HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> asoSummaryStatementRSDetails=getAsoSummaryStatementDetails(batchFileDetails.getFileLocation());
+			HashMap<Integer, List<AsoSummaryBillingStatementTableData>> asoSummaryStatementListDetails=getAsoSummaryStatementTableData(batchFileDetails.getFileLocation());
+			int noFiles=asoSummaryStatementRSDetails.size();
+			    for(int i=0; i<noFiles;i++){
+			    	HashMap<Integer, HashMap<String, Object>> asoSummaryStatementRS=asoSummaryStatementRSDetails.get(i);
+			    	List<AsoSummaryBillingStatementTableData> asoSummaryStatementList=asoSummaryStatementListDetails.get(i);
+			       HashMap<String, Object> dataSource=new HashMap<String, Object>();
+			    	for(int a=0;a<asoSummaryStatementRS.size();a++){
+			    	        dataSource.putAll(asoSummaryStatementRS.get(a));
+			    	}
+			    	
+			    	dataSource.put("asoSummaryStatementList", asoSummaryStatementList);
+			    
+			      	this.proposalNo=(String) dataSource.get("policyNum");
+					this.client_no=(String) dataSource.get("policyHolderNum");
+					this.client_name=(String) dataSource.get("policyHolder");
+					this.bill_no=(String) dataSource.get("billNum");
+					
+					this.proposal_type=(String) dataSource.get("policyType");
+					this.sub_client_no=(String) dataSource.get("subsidiaryNum");
+					this.sub_client_name=(String) dataSource.get("subsidiary");
+					this.indicator=(String) dataSource.get("printHardCp");
+					if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
+						this.sub_client_name=this.client_name;
+					}
+					if(this.uploadReport(dataSource,companyCode.getCompanyCode())){
+						++documentCount;
+			    	}
+			    	
+			    }
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+		return documentCount;
 		}
 		
 		
-		public synchronized  void uploadReport(HashMap<String, Object> dataSource, String companyCode) {
+		public boolean uploadReport(HashMap<String, Object> dataSource, String companyCode) {
 			
 			FileInputStream inputStream=null;
 			BufferedOutputStream outputStream=null;
@@ -180,6 +198,7 @@ public class AsoSummaryBillingStatementService{
 				
 			} catch (Exception e) {
 				e.printStackTrace();
+				return false;
 			} finally {
 				try {
 					if(inputStream!=null){
@@ -195,13 +214,10 @@ public class AsoSummaryBillingStatementService{
 					e.printStackTrace();
 				}
 			}
+			return true;
 		}
 		
-		public static java.sql.Timestamp getCurrentTimeStamp() {
-			java.util.Date today = new java.util.Date();
-			return new java.sql.Timestamp(today.getTime());
-
-		}
+		
 		
 		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> getAsoSummaryStatementDetails(String filepath){
 			
@@ -432,7 +448,6 @@ public class AsoSummaryBillingStatementService{
 		return cycledate;
 	}
 		public static void main(String args[]) {
-			AsoSummaryBillingStatementService sbs = new AsoSummaryBillingStatementService();
 			
 		}
 	

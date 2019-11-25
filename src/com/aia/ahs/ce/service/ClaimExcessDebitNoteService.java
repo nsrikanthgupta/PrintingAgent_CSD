@@ -21,19 +21,32 @@ import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import com.aia.common.db.DBCSDCommon;
+import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.CompanyCode;
+import com.aia.print.agent.service.TemplateActions;
 
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 
-public class ClaimExcessDebitNoteService extends Thread{
-	DBCSDCommon dbcmd=new DBCSDCommon();
-	private Thread t;
-	String jrReadpath = "D:\\Users\\itt0284\\JaspersoftWorkspace\\";
-	String pdfOutputRootPath = "D:\\Test_Write\\jasperPDf";
+@Service("claimExcessDebitNoteService")
+public class ClaimExcessDebitNoteService implements TemplateActions{
+
+	@Autowired
+	private DBCSDCommon dbcmd;
+	
+	@Value("${print.agent.fileoutput.path}")
+	private String outputPath;
+	
+	String jasper = FilenameUtils.normalize(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()+ "../../jasper/", true);
+	String logo= FilenameUtils.normalize(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()+"../../img/", true); 
 	
 	
 	SimpleDateFormat sdf=new SimpleDateFormat("YYYY");
@@ -60,27 +73,19 @@ public class ClaimExcessDebitNoteService extends Thread{
 	private String sub_client_name;
 	
 	private String indicator;
+	private String g4CycleDate;
+	
+	public int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails) {
 
-	public void run() {
-		String filePath = "D:\\PrintAgenttext\\company3\\20190630\\Co3_CEDN_Claim Excess Debit Note_20190630_0049.txt";
-		String companyCode="Company3";
-		genReport(filePath, companyCode);
-	}
-	
-	public static java.sql.Timestamp getCurrentTimeStamp() {
-		java.util.Date today = new java.util.Date();
-		return new java.sql.Timestamp(today.getTime());
-	}
-	
-	public void genReport(String filePath,String companyCode){
-		this.doc_creation_dt=ymd.format(new Date(getG4CycleDate(filePath).trim())) ;
-		this.year =sdf.format(new Date(getG4CycleDate(filePath).trim()));
+		this.g4CycleDate = batchCycle.getCycleDate();
+		this.doc_creation_dt=ymd.format(new Date(this.g4CycleDate)) ;
+		this.year =sdf.format(new Date(this.g4CycleDate));
 		this.tableName = "tbl_cedn_"+this.year;
 		this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
 		this.process_year=this.year; 
 		
-		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> ceDebitNoteRSDetails=getCEDebitNoteDetails(filePath);
-			
+		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> ceDebitNoteRSDetails=getCEDebitNoteDetails(batchFileDetails.getFileLocation());
+		int documentCount = 0;	
 		int noFiles=ceDebitNoteRSDetails.size();
 		for (int i = 0; i < noFiles; i++) {
 
@@ -89,6 +94,7 @@ public class ClaimExcessDebitNoteService extends Thread{
 			for (int a = 0; a < ceDebitNoteRS.size(); a++) {
 				dataSource.putAll(ceDebitNoteRS.get(a));
 			}
+			
 			this.proposalNo=(String) dataSource.get("policyNum");
 			this.client_no=(String) dataSource.get("policyHolderNum");
 			this.client_name=(String) dataSource.get("policyHolder");
@@ -96,18 +102,21 @@ public class ClaimExcessDebitNoteService extends Thread{
 			this.proposal_type=(String) dataSource.get("policyType");
 			this.sub_client_no=(String) dataSource.get("subsidiaryNum");
 			this.sub_client_name=(String) dataSource.get("subsidiary");
-			if(this.sub_client_name.equalsIgnoreCase("-")  || this.sub_client_name.isEmpty() ||this.sub_client_name==null){
+			if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
 				this.sub_client_name=this.client_name;
 			}
 			this.indicator=(String) dataSource.get("printHardCp");
-			uploadReport(dataSource,companyCode);
+			
+			
+			if(this.uploadReport(dataSource,companyCode.getCompanyCode())) {
+				++documentCount;
+			}
 		}
-		
-		}
-		public synchronized void uploadReport(HashMap<String, Object> dataSource,String companyCode) {
+		return documentCount;
+	}
+		public  boolean uploadReport(HashMap<String, Object> dataSource,String companyCode) {
 			FileInputStream inputStream=null;
 			BufferedOutputStream outputStream=null;
-			String dt=ymd.format(new Date());
 			try {
 		
 
@@ -115,34 +124,32 @@ public class ClaimExcessDebitNoteService extends Thread{
 			 String pdfname="";
 			 String pdfFullOutputPath ="";
 				
-			if(companyCode.trim().equalsIgnoreCase("Company3")) {
+			if(companyCode.trim().equalsIgnoreCase("Co3")) {
 				 this.companyCode=3;
-				 jrFullReadpath = jrReadpath+ "PrintingAgentReports\\AHS\\conventional\\CE\\ClaimExcessDebitNote.jasper";
+				 jrFullReadpath = jasper+ "PrintingAgentReports\\AHS\\conventional\\CE\\ClaimExcessDebitNote.jasper";
 				 String billmonth = "" + dataSource.get("billMonth");
 				 String billperiod = billmonth.replace("/", "");
 				 pdfname = dataSource.get("policyNum") + "_" + billperiod + "_" + dataSource.get("billNum") + "_CEDN.pdf";
-				 pdfFullOutputPath = pdfOutputRootPath+"company3\\"+dt.replace("-","");		 
+				 pdfFullOutputPath =  this.outputPath+"/"+companyCode+"/"+this.doc_creation_dt.replace("-","");			 
 			}
-			if(companyCode.trim().equalsIgnoreCase("Company4")) {
+			if(companyCode.trim().equalsIgnoreCase("Co4")) {
 				 this.companyCode=4;
-				 jrFullReadpath = jrReadpath+  "PrintingAgentReports\\AHS\\takaful\\CE\\ClaimExcessDebitNote.jasper";
+				 jrFullReadpath = jasper+  "PrintingAgentReports\\AHS\\takaful\\CE\\ClaimExcessDebitNote.jasper";
 				 String billmonth = "" + dataSource.get("billMonth");
 				 String billperiod = billmonth.replace("/", "");
 				 pdfname = dataSource.get("policyNum") + "_" + billperiod + "_" + dataSource.get("billNum") + "_DEDN.pdf";
-				 pdfFullOutputPath = pdfOutputRootPath+"company4\\"+dt.replace("-","");		 
+				 pdfFullOutputPath =  this.outputPath+"/"+companyCode+"/"+this.doc_creation_dt.replace("-","");			 
 			}
 			
 			 
 			inputStream = new FileInputStream(jrFullReadpath);
-			String imgpath = this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()+ "../../img/";
-			String image = FilenameUtils.normalize(imgpath, true);
-			dataSource.put("logo", image);
+			dataSource.put("logo", logo);
 
 			JasperPrint jasperPrint = JasperFillManager.fillReport(inputStream, dataSource, new JREmptyDataSource());
 			File dir=new File(pdfFullOutputPath);
 			 if (!dir.exists()) {
 		            if (dir.mkdirs()) {
-		                System.out.println("directories are created! "+pdfFullOutputPath);
+		                System.out.println("directories are created! "+dir.getAbsolutePath());
 		            } else {
 		            	System.out.println("failed to create directories ! "+pdfFullOutputPath);
 		            	
@@ -159,7 +166,7 @@ public class ClaimExcessDebitNoteService extends Thread{
 			outputStream =new BufferedOutputStream(new FileOutputStream(file));
 			JasperExportManager.exportReportToPdfStream(jasperPrint,outputStream);
 			
-			System.out.println("==> PDF Generated..."+file.getAbsolutePath());
+			//System.out.println("==> PDF Generated..."+file.getAbsolutePath());
 			PDDocument doc = PDDocument.load(new File(file.getAbsolutePath()));
 			int page_count = doc.getNumberOfPages();
 			
@@ -179,12 +186,11 @@ public class ClaimExcessDebitNoteService extends Thread{
 			    dbcmd.insertIntoTblDmDoc(dataId,docType,proposalNo,process_year,dmStatus,tbl_doc_nm,this.doc_creation_dt,this.companyCode,
 					 client_no,client_name,bill_no,bill_type,sub_client_no,sub_client_name,file_format,proposal_type,this.indicator,page_count);
             }
-			
-			
-		
+		 	
 		} catch (Exception e) {
 				System.out.println("Exception occurred : " + e);
-			} finally {
+		return false;		
+		} finally {
 				try {
 					if(inputStream!=null){
 						inputStream.close();
@@ -199,19 +205,20 @@ public class ClaimExcessDebitNoteService extends Thread{
 					e.printStackTrace();
 				}
 			}
-		}
+	 return true;		
+	}
 		
 		
 		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> getCEDebitNoteDetails(String filePath){
-			String FILENAME = filePath;
-			BufferedReader br = null;
-			FileReader fr = null;
+		
+			
+		
 			HashMap<Integer, HashMap<String, Object>> ceDebitNotetRS = new HashMap<Integer, HashMap<String, Object>>();
 			HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> ceDebitNotetRSDetails = new HashMap<Integer, HashMap<Integer, HashMap<String, Object>>>();
-
+			BufferedReader br = null;
 			try {
-				fr = new FileReader(FILENAME);
-				br = new BufferedReader(fr);
+				
+				br = new BufferedReader(new InputStreamReader(new FileInputStream(filePath)));
 				if (br == null || br.equals("")) {
 					System.out.println("No Claim Excess DebitNote Flat file ");
 				} else {
@@ -319,6 +326,16 @@ public class ClaimExcessDebitNoteService extends Thread{
 				System.out.println("[ClaimExcessDebitNoteService.getCEDebitNoteDetails] Exception: "
 						+ e.toString());
 				e.printStackTrace();
+			}finally {
+				try {
+					if(br!=null) {
+						br.close();
+					}
+					
+				} catch (IOException e) {
+					
+					e.printStackTrace();
+				}
 			}
 			return ceDebitNotetRSDetails;
 		}
@@ -360,18 +377,11 @@ public class ClaimExcessDebitNoteService extends Thread{
 			return cycledate;
 		}
 		
-		public void startBatch() {
-			System.out.println("Starting thread ");
-
-			if (t == null) {
-				t = new Thread(this);
-				t.start();
-			}
-		}
+		
 
 		public static void main(String args[]) {
 			ClaimExcessDebitNoteService sbs = new ClaimExcessDebitNoteService();
-			sbs.startBatch();
+		
 			System.out.println("startedd.....");
 		}
 

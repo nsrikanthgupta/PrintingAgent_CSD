@@ -51,7 +51,7 @@ public class VerifyReconcileData implements Job {
         LOGGER.info("VerifyReconcileData Triggerd");
         BatchJobConfig batchJobConfig = printAgentService.getBatchJobConfigByKey("VerifyReconcileData");
         if (batchJobConfig != null && batchJobConfig.getStatus().equalsIgnoreCase("ACTIVE")) {
-            List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TMPl_GENERATION_COMPLETED");
+            List< BatchCycle > batchCycles = printAgentService.getBatchCycles("TMPL_GENERATION_COMPLETED");
             if (CollectionUtils.isEmpty(batchCycles)) {
                 LOGGER.info("THERE ARE NO BATCH CYCLES WITH DOWNLOADED STATUS");
             } else {
@@ -60,8 +60,14 @@ public class VerifyReconcileData implements Job {
                     if (status <= 1) {
                         if (status == 1) {
                             batchCycle.setStatus("RECONCILIATION_SUCCESS");
+                            /**
+                             * Update tbl doc data to success
+                             */
                         } else if (status == 0) {
                             batchCycle.setStatus("RECONCILIATION_FAILED");
+                            /**
+                             * Update tbl doc data to fail
+                             */
                         }
                         batchCycle.setUpdatedBy("SD");
                         batchCycle.setUpdatedDate(new Date());

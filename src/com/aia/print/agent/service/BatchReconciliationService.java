@@ -5,6 +5,7 @@
 package com.aia.print.agent.service;
 
 import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
 
 /**
  * 
@@ -14,16 +15,10 @@ import com.aia.print.agent.entiry.BatchCycle;
  */
 public interface BatchReconciliationService {
 
-    /**
-     * @param batchCycle
-     * @return
-     */
     int perFormReconciliation(BatchCycle batchCycle);
 
-    /**
-     * @param batchCycle
-     * @return
-     */
-    int verifyTemplateGeneration(BatchCycle batchCycle);
+	int verifyTemplateGeneration(BatchCycle batchCycle);
+
+    void processReconcilationFile(BatchFileDetails batchFileDetails);
 
 }

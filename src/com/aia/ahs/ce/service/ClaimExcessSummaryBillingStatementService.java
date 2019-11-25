@@ -23,20 +23,32 @@ import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import com.aia.ahs.ce.model.ClaimExcessAsoSummaryStatementTableData;
 import com.aia.common.db.DBCSDCommon;
+import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
+import com.aia.print.agent.entiry.CompanyCode;
+import com.aia.print.agent.service.TemplateActions;
 
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 
-public class ClaimExcessSummaryBillingStatementService extends Thread {
-	private Thread t;
-	DBCSDCommon dbcmd=new DBCSDCommon();
-	private String jrReadpath = "D:\\Users\\itt0284\\JaspersoftWorkspace\\";
-	String pdfOutputRootPath = "D:\\Test_Write\\jasperPDf\\";
+@Service("claimExcessSummaryBillingStatementService")
+public class ClaimExcessSummaryBillingStatementService implements TemplateActions{
+	@Autowired
+	private DBCSDCommon dbcmd;
+	
+	@Value("${print.agent.fileoutput.path}")
+	private String outputPath;
+	
+	String jasper = FilenameUtils.normalize(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()+ "../../jasper/", true);
+	String logo= FilenameUtils.normalize(this.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()+"../../img/", true); 
 	
 	
 	SimpleDateFormat sdf=new SimpleDateFormat("YYYY");
@@ -63,22 +75,20 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 	private String sub_client_name;
 	private String indicator;
 	
-	
-	public void run() {
-		String filePath = "D:\\PrintAgenttext\\company4\\20190630\\Co4_CESBS_Claim Excess Summary Billing Statement20190630_0031.txt";
-	String companyCode="Company4";
-		this.genReport(filePath,companyCode);
-	}
+	private String g4CycleDate;
 
-	public void genReport(String filePath,String companyCode) {
-		this.doc_creation_dt=ymd.format(new Date(getG4CycleDate(filePath).trim())) ;
-		this.year =sdf.format(new Date(getG4CycleDate(filePath).trim()));
+	public int genReport(CompanyCode companyCode, BatchCycle batchCycle, BatchFileDetails batchFileDetails) {
+
+		int documentCount = 0;
+		this.g4CycleDate = batchCycle.getCycleDate();
+		this.doc_creation_dt=ymd.format(new Date(this.g4CycleDate)) ;
+		this.year =sdf.format(new Date(this.g4CycleDate));
 		this.tableName = "tbl_cesbs_"+this.year;
 		this.tbl_doc_nm="[aiaIMGdb_CSD_"+this.year+"]..["+this.tableName+"]";
 		this.process_year=year; 
 		
-		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> ceSummaryStatementRSDetails = getCESummaryStatementDetails(filePath);
-		HashMap<Integer, List<ClaimExcessAsoSummaryStatementTableData>> ceSummaryStatementListDetails = getCESummaryStatementTableData(filePath);
+		HashMap<Integer, HashMap<Integer, HashMap<String, Object>>> ceSummaryStatementRSDetails = getCESummaryStatementDetails(batchFileDetails.getFileLocation());
+		HashMap<Integer, List<ClaimExcessAsoSummaryStatementTableData>> ceSummaryStatementListDetails = getCESummaryStatementTableData(batchFileDetails.getFileLocation());
 		int noFiles = ceSummaryStatementRSDetails.size();
 		for (int i = 0; i < noFiles; i++) {
 			HashMap<Integer, HashMap<String, Object>> ceSummaryStatementRS = ceSummaryStatementRSDetails.get(i);
@@ -89,11 +99,6 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 			}
 			dataSource.put("ceSummaryStatementList", ceSummaryStatementList);
 
-			/*for(ClaimExcessAsoSummaryStatementTableData l:ceSummaryStatementList){
-				System.out.println("claint name :   "+l.getClaimantName());
-			}*/
-			
-			
 			this.proposalNo=(String) dataSource.get("policyNum");
 			this.client_no=(String) dataSource.get("policyHolderNum");
 			this.client_name=(String) dataSource.get("policyHolder");
@@ -102,43 +107,45 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 			this.proposal_type=(String) dataSource.get("policyType");
 			this.sub_client_no=(String) dataSource.get("subsidiaryNum");
 			this.sub_client_name=(String) dataSource.get("subsidiary");
-			if(this.sub_client_name.equalsIgnoreCase("-")  || this.sub_client_name.isEmpty() ||this.sub_client_name==null){
+			if(this.sub_client_name==null || this.sub_client_name.isEmpty() || this.sub_client_name.equalsIgnoreCase("-")){
 				this.sub_client_name=this.client_name;
 			}
 			this.indicator=(String) dataSource.get("printHardCp");
-			uploadReport(dataSource, companyCode);
+			
+			if(this.uploadReport(dataSource, companyCode.getCompanyCode())) {
+				++documentCount;
+			}
 
 		}
-
+return documentCount;
 	}
 
-	public void uploadReport(HashMap<String, Object> dataSource, String companyCode) {
+	public boolean uploadReport(HashMap<String, Object> dataSource, String companyCode) {
 		
 		FileInputStream inputStream=null;
 		BufferedOutputStream outputStream=null;
-		String dt=ymd.format(new Date());
+		
 		try {
 	
 			String jrFullReadpath="";
 			 String pdfname="";
 			 String pdfFullOutputPath ="";
 				
-			if(companyCode.trim().equalsIgnoreCase("Company3")) {
+			if(companyCode.trim().equalsIgnoreCase("Co3")) {
 				 this.companyCode=3;
-				 jrFullReadpath = this.jrReadpath+"PrintingAgentReports\\AHS\\conventional\\CE\\ClaimExcessSummaryStatement.jasper";
-				 //jrFullReadpath="D:\\Users\\itt0284\\JaspersoftWorkspace\\PrintingAgentReports\\AHS\\conventional\\CE\\ClaimExcessSummaryStatement.jasper";
-					String billmonth = "" + dataSource.get("billMonth");
+				 jrFullReadpath = this.jasper+"PrintingAgentReports\\AHS\\conventional\\CE\\ClaimExcessSummaryStatement.jasper";
+				 	String billmonth = "" + dataSource.get("billMonth");
 					String billperiod = billmonth.replace("/", "").replace(" ", "");
 					pdfname = dataSource.get("policyNum") + "_" + billperiod + "_" + dataSource.get("billNum")+ "_CESummaryStmt.pdf";
-					pdfFullOutputPath = pdfOutputRootPath+"company3\\"+dt.replace("-","");		 
+					pdfFullOutputPath =  this.outputPath+"/"+companyCode+"/"+this.doc_creation_dt.replace("-","");			 
 			}
-			if(companyCode.trim().equalsIgnoreCase("Company4")) {
+			else if(companyCode.trim().equalsIgnoreCase("Co4")) {
 				 this.companyCode=4;
-				 jrFullReadpath = this.jrReadpath+ "PrintingAgentReports\\AHS\\takaful\\CE\\ClaimExcessSummaryStatement.jasper";
+				 jrFullReadpath = this.jasper+ "PrintingAgentReports\\AHS\\takaful\\CE\\ClaimExcessSummaryStatement.jasper";
 				 String billmonth = "" + dataSource.get("billMonth");
 				 String billperiod = billmonth.replace("/", "");
 				 pdfname = dataSource.get("policyNum") + "_" + billperiod + "_" + dataSource.get("billNum")+ "_CESummaryStmt.pdf";
-				 pdfFullOutputPath = pdfOutputRootPath+"company4\\"+dt.replace("-","");		 
+				 pdfFullOutputPath =  this.outputPath+"/"+companyCode+"/"+this.doc_creation_dt.replace("-","");			 
 			}
 			
 			
@@ -159,8 +166,7 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 		            }
 			 }
 			
-			 //System.out.println("PDF name ================>:"+pdfname);
-				File file=new File(dir.getAbsolutePath()+"/"+pdfname);
+			 	File file=new File(dir.getAbsolutePath()+"/"+pdfname);
 				if(!file.exists()) {
 					file.createNewFile();
 					System.out.println("directories are created @@@@@@@@.... "+file.getAbsoluteFile());
@@ -173,7 +179,6 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 			System.out.println("==> PDF Generated..."+file.getAbsolutePath());
 			PDDocument doc = PDDocument.load(new File(file.getAbsolutePath()));
 			int page_count = doc.getNumberOfPages();
-			//System.out.println("Pages in PDF====> : "+page_count);
 			
 			byte[] fileContent = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
 	        String dataId = UUID.randomUUID().toString();
@@ -195,6 +200,7 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 		} catch (Exception e) {
 			System.out.println("Exception occurred : " + e);
 			e.printStackTrace();
+			return false;
 		} finally {
 			try {
 				if(inputStream!=null){
@@ -210,6 +216,7 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 				e.printStackTrace();
 			}
 		}
+	return true;
 	}
 
 	public static java.sql.Timestamp getCurrentTimeStamp() {
@@ -333,7 +340,7 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 					br.close();
 				}
 			}catch (IOException e) {
-				// TODO Auto-generated catch block
+				
 				e.printStackTrace();
 			}
 		}
@@ -408,7 +415,6 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 				}
 				
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -417,30 +423,11 @@ public class ClaimExcessSummaryBillingStatementService extends Thread {
 		return ceSummaryStatementListDetails;
 	}
 
-	public void startBatch() {
-		System.out.println("Starting thread ");
-
-		if (t == null) {
-			t = new Thread(this);
-			t.start();
-		}
-	}
 
 	public static void main(String args[]) {
 		ClaimExcessSummaryBillingStatementService sbs = new ClaimExcessSummaryBillingStatementService();
 
-		sbs.startBatch();
 		System.out.println("startedd.....");
 	}
-
-	public Thread getT() {
-		return t;
-	}
-
-	public void setT(Thread t) {
-		this.t = t;
-	}
-
-	
 
 }

@@ -21,8 +21,11 @@ import javax.persistence.TemporalType;
 @Entity
 @Table(name = "tbl_CompanyCode")
 public class CompanyCode {
-
+    
     @Id
+    private Long companyCodeId;
+
+    @Column
     private String companyCode;
 
     @Column
@@ -53,11 +56,11 @@ public class CompanyCode {
     private String updatedBy;
 
     @Column
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date updatedDate;
 
     @Column
-    @Temporal(TemporalType.DATE)
+    @Temporal(TemporalType.TIMESTAMP)
     private Date createdDate;
 
     /**
@@ -285,14 +288,25 @@ public class CompanyCode {
         this.createdDate = createdDate;
     }
 
-    /** {@inheritDoc} */
-    @Override
-    public String toString() {
-        return "CompanyCode [companyCode=" + companyCode + ", username=" + username + ", folderPath=" + folderPath + ", password="
-            + password + ", ipAddress=" + ipAddress + ", status=" + status + ", latestCycleDate=" + latestCycleDate
-            + ", localFolderPath=" + localFolderPath + ", createdBy=" + createdBy + ", updatedBy=" + updatedBy + ", updatedDate="
-            + updatedDate + ", createdDate=" + createdDate + "]";
+    /**
+     * Returns the companyCodeId.
+     * 
+     * @return the companyCodeId.
+     */
+    public Long getCompanyCodeId() {
+        return companyCodeId;
     }
+
+    /**
+     * Sets the companyCodeId.
+     * 
+     * @param companyCodeId the companyCodeId
+     */
+    public void setCompanyCodeId(Long companyCodeId) {
+        this.companyCodeId = companyCodeId;
+    }
+
+    
     
     
 

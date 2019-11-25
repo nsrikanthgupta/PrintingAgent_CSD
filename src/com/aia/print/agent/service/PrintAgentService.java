@@ -60,10 +60,10 @@ public interface PrintAgentService {
 	void updateBatchCycle(BatchCycle batchCycle);
 
 	/**
-	 * @param companyCode
+	 * @param companyCodeId
 	 * @return
 	 */
-	CompanyCode getCompanyCode(String companyCode);
+	CompanyCode getCompanyCode(Long companyCodeId);
 
 	/**
 	 * @param newCycleDate
@@ -72,16 +72,15 @@ public interface PrintAgentService {
 	 */
 	boolean verifyBatchCycleExist(String newCycleDate, CompanyCode code);
 
-    /**
-     * @param batchId
-     * @return
-     */
-    List< BatchFileDetails > getBatchFileDetails(Long batchId);
+	/**
+	 * @param batchId
+	 * @return
+	 */
+	List<BatchFileDetails> getBatchFileDetails(Long batchId);
 
-    /**
+	 /**
      * @param jobKey
      * @return
      */
     BatchJobConfig getBatchJobConfigByKey(String jobKey);
-
 }
