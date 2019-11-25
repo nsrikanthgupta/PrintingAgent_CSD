@@ -69,7 +69,7 @@ public class VerifyReconcileData implements Job {
                              * Update tbl doc data to fail
                              */
                         }
-                        batchCycle.setUpdatedBy("SD");
+                        batchCycle.setUpdatedBy("PrintingAgent_CSD");
                         batchCycle.setUpdatedDate(new Date());
                         printAgentService.updateBatchCycle(batchCycle);
                     }

@@ -59,7 +59,7 @@ public class BatchJobController {
         if (CollectionUtils.isNotEmpty(list)) {
             for (BatchJobConfig batchJobConfig : list) {
                 batchJobConfig.setStatus("INACTIVE");
-                batchJobConfig.setUpdatedBy("SD");
+                batchJobConfig.setUpdatedBy("PrintingAgent_CSD");
                 batchJobConfig.setUpdatedDate(new Date());
                 batchJobConfigRepository.save(batchJobConfig);
                 LOGGER.info("{} becomes INACTIVE ", batchJobConfig.getJobKey());
@@ -77,7 +77,7 @@ public class BatchJobController {
         if (CollectionUtils.isNotEmpty(list)) {
             for (BatchJobConfig batchJobConfig : list) {
                 batchJobConfig.setStatus("ACTIVE");
-                batchJobConfig.setUpdatedBy("SD");
+                batchJobConfig.setUpdatedBy("PrintingAgent_CSD");
                 batchJobConfig.setUpdatedDate(new Date());
                 batchJobConfigRepository.save(batchJobConfig);
                 LOGGER.info("{} becomes ACTIVE ", batchJobConfig.getJobKey());

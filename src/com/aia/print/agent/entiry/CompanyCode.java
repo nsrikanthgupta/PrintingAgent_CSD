@@ -68,8 +68,7 @@ public class CompanyCode {
      */
     public CompanyCode() {
         super();
-        this.createdBy = "SD";
-        this.createdDate = new Date();
+        this.createdBy = "PrintingAgent_CSD";
     }
 
     /**

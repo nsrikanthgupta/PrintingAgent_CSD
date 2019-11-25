@@ -70,10 +70,12 @@ public class ReconcilationData {
      */
     public ReconcilationData() {
         super();
+        this.createdBy = "PrintingAgent_CSD";
     }
 
     public ReconcilationData(Long batchId) {
         this.batchId = batchId;
+        this.createdBy = "PrintingAgent_CSD";
     }
 
     /**

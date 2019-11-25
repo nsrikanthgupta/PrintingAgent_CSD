@@ -55,10 +55,12 @@ public class ReconcilationDetail {
      */
     public ReconcilationDetail() {
         super();
+        this.createdBy = "PrintingAgent_CSD";
     }
 
     public ReconcilationDetail(Long reconcilationId) {
         this.reconcilationId = reconcilationId;
+        this.createdBy = "PrintingAgent_CSD";
     }
 
     /**

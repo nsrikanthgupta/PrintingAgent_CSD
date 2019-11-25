@@ -88,8 +88,7 @@ public class BatchFileDetails {
      */
     public BatchFileDetails() {
         super();
-        this.createdBy = "SD";
-        this.createdDate = new Date();
+        this.createdBy = "PrintingAgent_CSD";
     }
 
     /**
@@ -111,7 +110,7 @@ public class BatchFileDetails {
         this.status = status;
         this.archivePath = archivePath;
         this.remarks = remarks;
-        this.createdBy = "SD";
+        this.createdBy = "PrintingAgent_CSD";
         this.createdDate = new Date();
     }
 
@@ -125,7 +124,7 @@ public class BatchFileDetails {
         this.batchId = batchId;
         this.fileName = fileName;
         this.status = status;
-        this.createdBy = "SD";
+        this.createdBy = "PrintingAgent_CSD";
         this.createdDate = new Date();
         this.updatedBy = "";
     }

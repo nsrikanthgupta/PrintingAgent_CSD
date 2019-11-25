@@ -128,8 +128,15 @@ public class TableDmDoc {
 	@Column(name = "page_count")
 	private Integer pageCount;
 	
-	
-	public String getId() {
+	/**
+     * 
+     */
+    public TableDmDoc() {
+        super();
+        this.createdBy = "PrintingAgent_CSD";
+    }
+
+    public String getId() {
 		return id;
 	}
 

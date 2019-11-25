@@ -161,7 +161,7 @@ public class PrintAgentServiceImpl implements PrintAgentService {
     public void triggerNewBatchCycle(CompanyCode code) {
         BatchCycle batchCycle = new BatchCycle();
         batchCycle.setCompanyCode(code.getCompanyCode());
-        batchCycle.setCreatedBy("SD");
+        batchCycle.setCreatedBy("PrintingAgent_CSD");
         batchCycle.setCreatedDate(new Date());
         batchCycle.setCycleDate(code.getLatestCycleDate());
         batchCycle.setStatus("NEW");

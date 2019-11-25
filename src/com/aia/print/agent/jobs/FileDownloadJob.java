@@ -14,10 +14,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 
 import com.aia.print.agent.entiry.BatchCycle;
+import com.aia.print.agent.entiry.BatchFileDetails;
 import com.aia.print.agent.entiry.BatchJobConfig;
+import com.aia.print.agent.service.BatchReconciliationService;
 import com.aia.print.agent.service.PrintAgentService;
 
 /**
@@ -38,6 +41,18 @@ public class FileDownloadJob implements Job {
 	@Autowired
 	@Qualifier("printAgentService")
 	private PrintAgentService printAgentService;
+	
+	/**
+	 * reconcilationCode
+	 */
+	@Value("${print.agent.reconcilation.code}")
+    private String reconcilationCode;
+	
+	/**
+     * batchReconciliationService
+     */
+    @Autowired
+    private BatchReconciliationService batchReconciliationService;
 
 	/** {@inheritDoc} */
 	@Override
@@ -57,6 +72,13 @@ public class FileDownloadJob implements Job {
 					boolean status = printAgentService.downloadBatchCycles(batchCycle);
 					if (status) {
 						batchCycle.setStatus("DOWNLOADED");
+						
+						List<BatchFileDetails> batchFileDetails = printAgentService.getBatchFileDetails(batchCycle.getBatchId());
+						for(BatchFileDetails batchFile : batchFileDetails) {
+						    if (batchFile.getFileName().contains(reconcilationCode)) {
+						        batchReconciliationService.processReconcilationFile(batchFile);
+			                }
+						}
 					} else {
 						batchCycle.setStatus("DOWNLOAD_FAILED");
 						/**

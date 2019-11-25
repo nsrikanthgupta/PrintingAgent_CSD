@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -121,6 +122,7 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
 
     /** {@inheritDoc} */
     @Override
+    @Async
     public void processReconcilationFile(BatchFileDetails batchFileDetails) {
         String lineContent = null;
         int lineCount = 0;
@@ -128,6 +130,7 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
         try (LineIterator iterator =
             IOUtils.lineIterator(new FileInputStream(new File(batchFileDetails.getFileLocation())), Charset.forName("UTF-8"))) {
             while (iterator.hasNext()) {
+                lineContent = iterator.nextLine();
                 if (StringUtils.isBlank(lineContent)) {
                     continue;
                 }
@@ -136,7 +139,6 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
                     continue;
                 }
                 ++lineCount;
-                lineContent = iterator.nextLine();
                 LOGGER.debug("Reconciliation Content --> {}", lineContent);
                 String[] list = lineContent.split("\\|");
                 if (list.length >= 26) {

@@ -64,6 +64,7 @@ public class BatchCycle {
      */
     public BatchCycle() {
         super();
+        this.createdBy = "PrintingAgent_CSD";
     }
 
     /**

@@ -58,6 +58,7 @@ public class BatchJobConfig {
      */
     public BatchJobConfig() {
         super();
+        this.createdBy = "PrintingAgent_CSD";
     }
 
     /**
