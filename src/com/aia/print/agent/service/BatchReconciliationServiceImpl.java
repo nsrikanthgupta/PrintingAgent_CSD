@@ -8,8 +8,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
@@ -27,9 +31,11 @@ import com.aia.print.agent.entiry.BatchCycle;
 import com.aia.print.agent.entiry.BatchFileDetails;
 import com.aia.print.agent.entiry.ReconcilationData;
 import com.aia.print.agent.entiry.ReconcilationDetail;
+import com.aia.print.agent.entiry.TableDmDoc;
 import com.aia.print.agent.repository.BatchFileDetailsRepository;
 import com.aia.print.agent.repository.ReconcilationDataRepository;
 import com.aia.print.agent.repository.ReconcilationDetailRepository;
+import com.aia.print.agent.repository.TableDmDocRepository;
 
 /**
  * 
@@ -57,6 +63,9 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
     @Value("${print.agent.reconcilation.code}")
     private String reconcilationCode;
 
+    @Autowired
+    private TableDmDocRepository tableDmDocRepository;
+
     /** {@inheritDoc} */
     @Override
     @Transactional
@@ -64,30 +73,57 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
         /**
          * Implement Logic For Reconciliation
          */
-        List< BatchFileDetails > fileList = batchFileDetailsRepository.getBatchFileDetails(batchCycle.getBatchId());
-        if (!CollectionUtils.isEmpty(fileList)) {
-            for (BatchFileDetails batchFileDetails : fileList) {
+        List< ReconcilationData > reconcilationData = dataRepository.getReconcilationData(batchCycle.getBatchId());
+        if (!CollectionUtils.isEmpty(reconcilationData)) {
+            for (ReconcilationData conciliationData : reconcilationData) {
 
-                if (batchFileDetails.getDocumentCode().equalsIgnoreCase("GMEXSR")) {
-                    continue;
-                }
-                if (batchFileDetails.getFileName().contains(reconcilationCode)) {
-                    continue;
-                } else if (batchFileDetails.getStatus().equalsIgnoreCase("TMPL_GENERATION_INPROGRESS")) {
-                    return 2;
-                } else if (batchFileDetails.getStatus().equalsIgnoreCase("DOWNLOADED")) {
-                    continue;
-                } else if (batchFileDetails.getStatus().equalsIgnoreCase("TMPL_GENERATION_FAILED")) {
+                LOGGER.debug("Reconcilation process starts for the policy {} and bill number {} ", conciliationData.getPolicyNo(),
+                    conciliationData.getBillNo());
+
+                LOGGER.debug("Expected total documents are {} for the policy {} and bill number {} ",
+                    conciliationData.getTotalNo(), conciliationData.getPolicyNo(), conciliationData.getBillNo());
+
+                List< TableDmDoc > list =
+                    tableDmDocRepository.getTableDmDoc(conciliationData.getPolicyNo(), conciliationData.getBillNo(),
+                        conciliationData.getCreatedBy(), this.getCycleDate(conciliationData.getCycleDate()));
+                String totalDocumentCount = this.getTotalDocuments(list);
+
+                LOGGER.debug("Actual total documents are {} for the policy {} and bill number {} ", totalDocumentCount,
+                    conciliationData.getPolicyNo(), conciliationData.getBillNo());
+
+                if (!totalDocumentCount.equals(conciliationData.getTotalNo())) {
+                    LOGGER.debug("Reconcilation process ends for the policy {} and bill number {} and it is fail",
+                        conciliationData.getPolicyNo(), conciliationData.getBillNo());
                     return 0;
-                } else if (batchFileDetails.getExpectedDocumentCount() == null
-                    || batchFileDetails.getActualDocumentCount() == null) {
-                    return 2;
-                } else if (batchFileDetails.getExpectedDocumentCount() != batchFileDetails.getActualDocumentCount()) {
-                    return 0;
                 }
+
+                LOGGER.debug("Reconcilation process ends for the policy {} and bill number {} and it is pass",
+                    conciliationData.getPolicyNo(), conciliationData.getBillNo());
             }
         }
         return 1;
+    }
+
+    private String getTotalDocuments(List< TableDmDoc > list) {
+        Set< String > set = new HashSet<>();
+        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(list)) {
+            for (TableDmDoc dmDoc : list) {
+                set.add(dmDoc.getMtDocTypecd());
+            }
+            return String.valueOf(set.size());
+        }
+        return "0";
+    }
+
+    private String getCycleDate(String cycleDate) {
+        SimpleDateFormat inputFormat = new SimpleDateFormat("dd/MM/yyyy");
+        SimpleDateFormat outputFormat = new SimpleDateFormat("yyyy-MM-dd");
+        try {
+            return outputFormat.format(inputFormat.parseObject(cycleDate));
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     @Override

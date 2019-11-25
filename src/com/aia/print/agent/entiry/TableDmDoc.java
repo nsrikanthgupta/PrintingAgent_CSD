@@ -44,13 +44,13 @@ public class TableDmDoc {
 	private String Processyear;
 	
 	@Column(name = "dm_status")
-	private int dmStatus;
+	private Integer dmStatus;
 	
 	@Column(name = "tbl_doc_nm")
 	private String tblDocNm;
 	
 	@Column(name = "is_supressed")
-	private int isSupressed;
+	private Integer isSupressed;
 	
 	@Column(name = "created_by")
 	private String createdBy;
@@ -136,295 +136,652 @@ public class TableDmDoc {
         this.createdBy = "PrintingAgent_CSD";
     }
 
+    /**
+     * Returns the id.
+     * 
+     * @return the id.
+     */
     public String getId() {
-		return id;
-	}
-
-	public String getDmDocId() {
-		return dmDocId;
-	}
-
-	public String getMtAppCd() {
-		return mtAppCd;
-	}
-
-	public String getMtDocTypecd() {
-		return mtDocTypecd;
-	}
-
-	public String getProposalNo() {
-		return proposalNo;
-	}
-
-	public String getIcNo() {
-		return icNo;
-	}
-
-	public Date getRecvDt() {
-		return recvDt;
-	}
-
-	public String getProcessyear() {
-		return Processyear;
-	}
-
-	public int getDmStatus() {
-		return dmStatus;
-	}
-
-	public String getTblDocNm() {
-		return tblDocNm;
-	}
-
-	public int getIsSupressed() {
-		return isSupressed;
-	}
-
-	public String getCreatedBy() {
-		return createdBy;
-	}
-
-	public Date getCreatedDt() {
-		return createdDt;
-	}
-
-	public String getUpdatedBy() {
-		return updatedBy;
-	}
-
-	public Date getUpdatedDt() {
-		return updatedDt;
-	}
-
-	public String getDocPwd() {
-		return docPwd;
-	}
-
-	public String getChannel() {
-		return channel;
-	}
-
-	public String getDocCreationDt() {
-		return docCreationDt;
-	}
-
-	public int getCompanyCode() {
-		return companyCode;
-	}
-
-	public String getDebtorCode() {
-		return debtorCode;
-	}
-
-	public String getAgtNo() {
-		return agtNo;
-	}
-
-	public String getClientNo() {
-		return clientNo;
-	}
-
-	public String getClientName() {
-		return clientName;
-	}
-
-	public String getInceptionStartDt() {
-		return inceptionStartDt;
-	}
-
-	public String getInceptionEndDt() {
-		return inceptionEndDt;
-	}
-
-	public String getsGUID() {
-		return sGUID;
-	}
-
-	public String getDebtorCode2() {
-		return debtorCode2;
-	}
-
-	public String getBillNo() {
-		return billNo;
-	}
-
-	public String getBillType() {
-		return billType;
-	}
-
-	public Double getAmount() {
-		return amount;
-	}
-
-	public String getSubClientNo() {
-		return subClientNo;
-	}
-
-	public String getSubClientName() {
-		return subClientName;
-	}
-
-	public String getFileFormate() {
-		return fileFormate;
-	}
-
-	public String getProposalType() {
-		return proposalType;
-	}
-
-	public String getIndicator() {
-		return indicator;
-	}
-
-	public void setId(String id) {
-		this.id = id;
-	}
-
-	public void setDmDocId(String dmDocId) {
-		this.dmDocId = dmDocId;
-	}
-
-	public void setMtAppCd(String mtAppCd) {
-		this.mtAppCd = mtAppCd;
-	}
-
-	public void setMtDocTypecd(String mtDocTypecd) {
-		this.mtDocTypecd = mtDocTypecd;
-	}
-
-	public void setProposalNo(String proposalNo) {
-		this.proposalNo = proposalNo;
-	}
-
-	public void setIcNo(String icNo) {
-		this.icNo = icNo;
-	}
-
-	public void setRecvDt(Date recvDt) {
-		this.recvDt = recvDt;
-	}
-
-	public void setProcessyear(String processyear) {
-		Processyear = processyear;
-	}
-
-	public void setDmStatus(int dmStatus) {
-		this.dmStatus = dmStatus;
-	}
-
-	public void setTblDocNm(String tblDocNm) {
-		this.tblDocNm = tblDocNm;
-	}
-
-	public void setIsSupressed(int isSupressed) {
-		this.isSupressed = isSupressed;
-	}
-
-	public void setCreatedBy(String createdBy) {
-		this.createdBy = createdBy;
-	}
-
-	public void setCreatedDt(Date createdDt) {
-		this.createdDt = createdDt;
-	}
-
-	public void setUpdatedBy(String updatedBy) {
-		this.updatedBy = updatedBy;
-	}
-
-	public void setUpdatedDt(Date updatedDt) {
-		this.updatedDt = updatedDt;
-	}
-
-	public void setDocPwd(String docPwd) {
-		this.docPwd = docPwd;
-	}
-
-	public void setChannel(String channel) {
-		this.channel = channel;
-	}
-
-	public void setDocCreationDt(String docCreationDt) {
-		this.docCreationDt = docCreationDt;
-	}
-
-	public void setCompanyCode(int companyCode) {
-		this.companyCode = companyCode;
-	}
-
-	public void setDebtorCode(String debtorCode) {
-		this.debtorCode = debtorCode;
-	}
-
-	public void setAgtNo(String agtNo) {
-		this.agtNo = agtNo;
-	}
-
-	public void setClientNo(String clientNo) {
-		this.clientNo = clientNo;
-	}
-
-	public void setClientName(String clientName) {
-		this.clientName = clientName;
-	}
-
-	public void setInceptionStartDt(String inceptionStartDt) {
-		this.inceptionStartDt = inceptionStartDt;
-	}
-
-	public void setInceptionEndDt(String inceptionEndDt) {
-		this.inceptionEndDt = inceptionEndDt;
-	}
-
-	public void setsGUID(String sGUID) {
-		this.sGUID = sGUID;
-	}
-
-	public void setDebtorCode2(String debtorCode2) {
-		this.debtorCode2 = debtorCode2;
-	}
-
-	public void setBillNo(String billNo) {
-		this.billNo = billNo;
-	}
-
-	public void setBillType(String billType) {
-		this.billType = billType;
-	}
-
-	public void setAmount(Double amount) {
-		this.amount = amount;
-	}
-
-	public void setSubClientNo(String subClientNo) {
-		this.subClientNo = subClientNo;
-	}
-
-	public void setSubClientName(String subClientName) {
-		this.subClientName = subClientName;
-	}
-
-	public void setFileFormate(String fileFormate) {
-		this.fileFormate = fileFormate;
-	}
-
-	public void setProposalType(String proposalType) {
-		this.proposalType = proposalType;
-	}
-
-	public void setIndicator(String indicator) {
-		this.indicator = indicator;
-	}
-
-	public Integer getPageCount() {
-		return pageCount;
-	}
-
-	public void setPageCount(Integer pageCount) {
-		this.pageCount = pageCount;
-	}
-
-	
-	
+        return id;
+    }
+
+    /**
+     * Sets the id.
+     * 
+     * @param id the id
+     */
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    /**
+     * Returns the dmDocId.
+     * 
+     * @return the dmDocId.
+     */
+    public String getDmDocId() {
+        return dmDocId;
+    }
+
+    /**
+     * Sets the dmDocId.
+     * 
+     * @param dmDocId the dmDocId
+     */
+    public void setDmDocId(String dmDocId) {
+        this.dmDocId = dmDocId;
+    }
+
+    /**
+     * Returns the mtAppCd.
+     * 
+     * @return the mtAppCd.
+     */
+    public String getMtAppCd() {
+        return mtAppCd;
+    }
+
+    /**
+     * Sets the mtAppCd.
+     * 
+     * @param mtAppCd the mtAppCd
+     */
+    public void setMtAppCd(String mtAppCd) {
+        this.mtAppCd = mtAppCd;
+    }
+
+    /**
+     * Returns the mtDocTypecd.
+     * 
+     * @return the mtDocTypecd.
+     */
+    public String getMtDocTypecd() {
+        return mtDocTypecd;
+    }
+
+    /**
+     * Sets the mtDocTypecd.
+     * 
+     * @param mtDocTypecd the mtDocTypecd
+     */
+    public void setMtDocTypecd(String mtDocTypecd) {
+        this.mtDocTypecd = mtDocTypecd;
+    }
+
+    /**
+     * Returns the proposalNo.
+     * 
+     * @return the proposalNo.
+     */
+    public String getProposalNo() {
+        return proposalNo;
+    }
+
+    /**
+     * Sets the proposalNo.
+     * 
+     * @param proposalNo the proposalNo
+     */
+    public void setProposalNo(String proposalNo) {
+        this.proposalNo = proposalNo;
+    }
+
+    /**
+     * Returns the icNo.
+     * 
+     * @return the icNo.
+     */
+    public String getIcNo() {
+        return icNo;
+    }
+
+    /**
+     * Sets the icNo.
+     * 
+     * @param icNo the icNo
+     */
+    public void setIcNo(String icNo) {
+        this.icNo = icNo;
+    }
+
+    /**
+     * Returns the recvDt.
+     * 
+     * @return the recvDt.
+     */
+    public Date getRecvDt() {
+        return recvDt;
+    }
+
+    /**
+     * Sets the recvDt.
+     * 
+     * @param recvDt the recvDt
+     */
+    public void setRecvDt(Date recvDt) {
+        this.recvDt = recvDt;
+    }
+
+    /**
+     * Returns the processyear.
+     * 
+     * @return the processyear.
+     */
+    public String getProcessyear() {
+        return Processyear;
+    }
+
+    /**
+     * Sets the processyear.
+     * 
+     * @param processyear the processyear
+     */
+    public void setProcessyear(String processyear) {
+        Processyear = processyear;
+    }
+
+    /**
+     * Returns the dmStatus.
+     * 
+     * @return the dmStatus.
+     */
+    public Integer getDmStatus() {
+        return dmStatus;
+    }
+
+    /**
+     * Sets the dmStatus.
+     * 
+     * @param dmStatus the dmStatus
+     */
+    public void setDmStatus(Integer dmStatus) {
+        this.dmStatus = dmStatus;
+    }
+
+    /**
+     * Returns the tblDocNm.
+     * 
+     * @return the tblDocNm.
+     */
+    public String getTblDocNm() {
+        return tblDocNm;
+    }
+
+    /**
+     * Sets the tblDocNm.
+     * 
+     * @param tblDocNm the tblDocNm
+     */
+    public void setTblDocNm(String tblDocNm) {
+        this.tblDocNm = tblDocNm;
+    }
+
+    /**
+     * Returns the isSupressed.
+     * 
+     * @return the isSupressed.
+     */
+    public Integer getIsSupressed() {
+        return isSupressed;
+    }
+
+    /**
+     * Sets the isSupressed.
+     * 
+     * @param isSupressed the isSupressed
+     */
+    public void setIsSupressed(Integer isSupressed) {
+        this.isSupressed = isSupressed;
+    }
+
+    /**
+     * Returns the createdBy.
+     * 
+     * @return the createdBy.
+     */
+    public String getCreatedBy() {
+        return createdBy;
+    }
+
+    /**
+     * Sets the createdBy.
+     * 
+     * @param createdBy the createdBy
+     */
+    public void setCreatedBy(String createdBy) {
+        this.createdBy = createdBy;
+    }
+
+    /**
+     * Returns the createdDt.
+     * 
+     * @return the createdDt.
+     */
+    public Date getCreatedDt() {
+        return createdDt;
+    }
+
+    /**
+     * Sets the createdDt.
+     * 
+     * @param createdDt the createdDt
+     */
+    public void setCreatedDt(Date createdDt) {
+        this.createdDt = createdDt;
+    }
+
+    /**
+     * Returns the updatedBy.
+     * 
+     * @return the updatedBy.
+     */
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    /**
+     * Sets the updatedBy.
+     * 
+     * @param updatedBy the updatedBy
+     */
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
+    }
+
+    /**
+     * Returns the updatedDt.
+     * 
+     * @return the updatedDt.
+     */
+    public Date getUpdatedDt() {
+        return updatedDt;
+    }
+
+    /**
+     * Sets the updatedDt.
+     * 
+     * @param updatedDt the updatedDt
+     */
+    public void setUpdatedDt(Date updatedDt) {
+        this.updatedDt = updatedDt;
+    }
+
+    /**
+     * Returns the docPwd.
+     * 
+     * @return the docPwd.
+     */
+    public String getDocPwd() {
+        return docPwd;
+    }
+
+    /**
+     * Sets the docPwd.
+     * 
+     * @param docPwd the docPwd
+     */
+    public void setDocPwd(String docPwd) {
+        this.docPwd = docPwd;
+    }
+
+    /**
+     * Returns the channel.
+     * 
+     * @return the channel.
+     */
+    public String getChannel() {
+        return channel;
+    }
+
+    /**
+     * Sets the channel.
+     * 
+     * @param channel the channel
+     */
+    public void setChannel(String channel) {
+        this.channel = channel;
+    }
+
+    /**
+     * Returns the docCreationDt.
+     * 
+     * @return the docCreationDt.
+     */
+    public String getDocCreationDt() {
+        return docCreationDt;
+    }
+
+    /**
+     * Sets the docCreationDt.
+     * 
+     * @param docCreationDt the docCreationDt
+     */
+    public void setDocCreationDt(String docCreationDt) {
+        this.docCreationDt = docCreationDt;
+    }
+
+    /**
+     * Returns the companyCode.
+     * 
+     * @return the companyCode.
+     */
+    public int getCompanyCode() {
+        return companyCode;
+    }
+
+    /**
+     * Sets the companyCode.
+     * 
+     * @param companyCode the companyCode
+     */
+    public void setCompanyCode(int companyCode) {
+        this.companyCode = companyCode;
+    }
+
+    /**
+     * Returns the debtorCode.
+     * 
+     * @return the debtorCode.
+     */
+    public String getDebtorCode() {
+        return debtorCode;
+    }
+
+    /**
+     * Sets the debtorCode.
+     * 
+     * @param debtorCode the debtorCode
+     */
+    public void setDebtorCode(String debtorCode) {
+        this.debtorCode = debtorCode;
+    }
+
+    /**
+     * Returns the agtNo.
+     * 
+     * @return the agtNo.
+     */
+    public String getAgtNo() {
+        return agtNo;
+    }
+
+    /**
+     * Sets the agtNo.
+     * 
+     * @param agtNo the agtNo
+     */
+    public void setAgtNo(String agtNo) {
+        this.agtNo = agtNo;
+    }
+
+    /**
+     * Returns the clientNo.
+     * 
+     * @return the clientNo.
+     */
+    public String getClientNo() {
+        return clientNo;
+    }
+
+    /**
+     * Sets the clientNo.
+     * 
+     * @param clientNo the clientNo
+     */
+    public void setClientNo(String clientNo) {
+        this.clientNo = clientNo;
+    }
+
+    /**
+     * Returns the clientName.
+     * 
+     * @return the clientName.
+     */
+    public String getClientName() {
+        return clientName;
+    }
+
+    /**
+     * Sets the clientName.
+     * 
+     * @param clientName the clientName
+     */
+    public void setClientName(String clientName) {
+        this.clientName = clientName;
+    }
+
+    /**
+     * Returns the inceptionStartDt.
+     * 
+     * @return the inceptionStartDt.
+     */
+    public String getInceptionStartDt() {
+        return inceptionStartDt;
+    }
+
+    /**
+     * Sets the inceptionStartDt.
+     * 
+     * @param inceptionStartDt the inceptionStartDt
+     */
+    public void setInceptionStartDt(String inceptionStartDt) {
+        this.inceptionStartDt = inceptionStartDt;
+    }
+
+    /**
+     * Returns the inceptionEndDt.
+     * 
+     * @return the inceptionEndDt.
+     */
+    public String getInceptionEndDt() {
+        return inceptionEndDt;
+    }
+
+    /**
+     * Sets the inceptionEndDt.
+     * 
+     * @param inceptionEndDt the inceptionEndDt
+     */
+    public void setInceptionEndDt(String inceptionEndDt) {
+        this.inceptionEndDt = inceptionEndDt;
+    }
+
+    /**
+     * Returns the sGUID.
+     * 
+     * @return the sGUID.
+     */
+    public String getsGUID() {
+        return sGUID;
+    }
+
+    /**
+     * Sets the sGUID.
+     * 
+     * @param sGUID the sGUID
+     */
+    public void setsGUID(String sGUID) {
+        this.sGUID = sGUID;
+    }
+
+    /**
+     * Returns the debtorCode2.
+     * 
+     * @return the debtorCode2.
+     */
+    public String getDebtorCode2() {
+        return debtorCode2;
+    }
+
+    /**
+     * Sets the debtorCode2.
+     * 
+     * @param debtorCode2 the debtorCode2
+     */
+    public void setDebtorCode2(String debtorCode2) {
+        this.debtorCode2 = debtorCode2;
+    }
+
+    /**
+     * Returns the billNo.
+     * 
+     * @return the billNo.
+     */
+    public String getBillNo() {
+        return billNo;
+    }
+
+    /**
+     * Sets the billNo.
+     * 
+     * @param billNo the billNo
+     */
+    public void setBillNo(String billNo) {
+        this.billNo = billNo;
+    }
+
+    /**
+     * Returns the billType.
+     * 
+     * @return the billType.
+     */
+    public String getBillType() {
+        return billType;
+    }
+
+    /**
+     * Sets the billType.
+     * 
+     * @param billType the billType
+     */
+    public void setBillType(String billType) {
+        this.billType = billType;
+    }
+
+    /**
+     * Returns the amount.
+     * 
+     * @return the amount.
+     */
+    public Double getAmount() {
+        return amount;
+    }
+
+    /**
+     * Sets the amount.
+     * 
+     * @param amount the amount
+     */
+    public void setAmount(Double amount) {
+        this.amount = amount;
+    }
+
+    /**
+     * Returns the subClientNo.
+     * 
+     * @return the subClientNo.
+     */
+    public String getSubClientNo() {
+        return subClientNo;
+    }
+
+    /**
+     * Sets the subClientNo.
+     * 
+     * @param subClientNo the subClientNo
+     */
+    public void setSubClientNo(String subClientNo) {
+        this.subClientNo = subClientNo;
+    }
+
+    /**
+     * Returns the subClientName.
+     * 
+     * @return the subClientName.
+     */
+    public String getSubClientName() {
+        return subClientName;
+    }
+
+    /**
+     * Sets the subClientName.
+     * 
+     * @param subClientName the subClientName
+     */
+    public void setSubClientName(String subClientName) {
+        this.subClientName = subClientName;
+    }
+
+    /**
+     * Returns the fileFormate.
+     * 
+     * @return the fileFormate.
+     */
+    public String getFileFormate() {
+        return fileFormate;
+    }
+
+    /**
+     * Sets the fileFormate.
+     * 
+     * @param fileFormate the fileFormate
+     */
+    public void setFileFormate(String fileFormate) {
+        this.fileFormate = fileFormate;
+    }
+
+    /**
+     * Returns the proposalType.
+     * 
+     * @return the proposalType.
+     */
+    public String getProposalType() {
+        return proposalType;
+    }
+
+    /**
+     * Sets the proposalType.
+     * 
+     * @param proposalType the proposalType
+     */
+    public void setProposalType(String proposalType) {
+        this.proposalType = proposalType;
+    }
+
+    /**
+     * Returns the indicator.
+     * 
+     * @return the indicator.
+     */
+    public String getIndicator() {
+        return indicator;
+    }
+
+    /**
+     * Sets the indicator.
+     * 
+     * @param indicator the indicator
+     */
+    public void setIndicator(String indicator) {
+        this.indicator = indicator;
+    }
+
+    /**
+     * Returns the pageCount.
+     * 
+     * @return the pageCount.
+     */
+    public Integer getPageCount() {
+        return pageCount;
+    }
+
+    /**
+     * Sets the pageCount.
+     * 
+     * @param pageCount the pageCount
+     */
+    public void setPageCount(Integer pageCount) {
+        this.pageCount = pageCount;
+    }
 
 }
