@@ -133,9 +133,7 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
         LOGGER.info("batch cycle file count {} ", fileList.size());
         for (BatchFileDetails batchFileDetails : fileList) {
 
-            if (batchFileDetails.getDocumentCode().equalsIgnoreCase("GMEXSR")) {
-                continue;
-            }
+           
             if (batchFileDetails.getFileName().contains(reconcilationCode)) {
                 continue;
             }
@@ -145,13 +143,10 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
             if (batchFileDetails.getStatus().equalsIgnoreCase("DOWNLOADED")) {
                 continue;
             }
-            if (!batchFileDetails.getStatus().equalsIgnoreCase("TMPl_GENERATION_COMPLETED")) {
+            if (batchFileDetails.getStatus().equalsIgnoreCase("TMPL_GENERATION_FAILED")) {
                 return 0;
             }
 
-            if (StringUtils.isNoneBlank(batchFileDetails.getParseError())) {
-                return 0;
-            }
         }
         return 1;
     }

@@ -21,7 +21,6 @@ import org.springframework.util.CollectionUtils;
 import com.aia.print.agent.entiry.BatchCycle;
 import com.aia.print.agent.entiry.BatchJobConfig;
 import com.aia.print.agent.entiry.CompanyCode;
-import com.aia.print.agent.repository.TableDmDocRepository;
 import com.aia.print.agent.service.BatchReconciliationService;
 import com.aia.print.agent.service.PrintAgentService;
 
@@ -51,9 +50,9 @@ public class VerifyReconcileData implements Job {
 
     /**
      * tableDmDocRepository
-     */
-    @Autowired
-    private TableDmDocRepository tableDmDocRepository;
+     *//*
+        * @Autowired private TableDmDocRepository tableDmDocRepository;
+        */
 
     /** {@inheritDoc} */
     @Override
