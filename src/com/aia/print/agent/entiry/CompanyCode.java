@@ -54,6 +54,9 @@ public class CompanyCode {
 
     @Column
     private String updatedBy;
+    
+    @Column
+    private String refCode;
 
     @Column
     @Temporal(TemporalType.TIMESTAMP)
@@ -305,8 +308,22 @@ public class CompanyCode {
         this.companyCodeId = companyCodeId;
     }
 
-    
-    
-    
+    /**
+     * Returns the refCode.
+     * 
+     * @return the refCode.
+     */
+    public String getRefCode() {
+        return refCode;
+    }
+
+    /**
+     * Sets the refCode.
+     * 
+     * @param refCode the refCode
+     */
+    public void setRefCode(String refCode) {
+        this.refCode = refCode;
+    }
 
 }

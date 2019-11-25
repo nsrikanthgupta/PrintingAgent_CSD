@@ -27,8 +27,11 @@ public interface TableDmDocRepository extends CrudRepository< TableDmDoc , Strin
 
     @Query("select tdc from TableDmDoc tdc where tdc.createdBy = ?2 and tdc.isSupressed is null and tdc.debtorCode is null and tdc.docCreationDt =?1")
     List< TableDmDoc > getPolicyInfoWithoutDebtorCode(String cycleDate, String createdBy);
-    
-    
+
     @Query("select tdc from TableDmDoc tdc where tdc.createdBy = ?2 and tdc.isSupressed is null and tdc.debtorCode is not null and tdc.docCreationDt =?1")
     List< TableDmDoc > getPolicyInfoWithDebtorCode(String cycleDate, String createdBy);
+
+    @Query("update TableDmDoc tdc set tdc.isSupressed = ?4 where tdc.createdBy = ?2 and tdc.docCreationDt =?1 and tdc.companyCode = ?3")
+    void updateTblDocuments(String cycleDate, String createdBy, String refCode, Integer isSupressed);
+
 }
