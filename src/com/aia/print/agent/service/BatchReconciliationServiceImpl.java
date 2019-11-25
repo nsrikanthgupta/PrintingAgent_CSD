@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -76,40 +77,39 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
         List< ReconcilationData > reconcilationData = dataRepository.getReconcilationData(batchCycle.getBatchId());
         if (!CollectionUtils.isEmpty(reconcilationData)) {
             for (ReconcilationData conciliationData : reconcilationData) {
+                LOGGER.debug("Reconcilation process starts for the policy {} and bill number {} and expected count {} ",
+                    conciliationData.getPolicyNo(), conciliationData.getBillNo(), conciliationData.getTotalNo());
 
-                LOGGER.debug("Reconcilation process starts for the policy {} and bill number {} ", conciliationData.getPolicyNo(),
-                    conciliationData.getBillNo());
-
-                LOGGER.debug("Expected total documents are {} for the policy {} and bill number {} ",
-                    conciliationData.getTotalNo(), conciliationData.getPolicyNo(), conciliationData.getBillNo());
+                List< ReconcilationDetail > details =
+                    detailRepository.getReconcilationDetailReconcileId(conciliationData.getReconcilationId());
 
                 List< TableDmDoc > list =
                     tableDmDocRepository.getTableDmDoc(conciliationData.getPolicyNo(), conciliationData.getBillNo(),
                         conciliationData.getCreatedBy(), this.getCycleDate(conciliationData.getCycleDate()));
-                String totalDocumentCount = this.getTotalDocuments(list);
-
-                LOGGER.debug("Actual total documents are {} for the policy {} and bill number {} ", totalDocumentCount,
-                    conciliationData.getPolicyNo(), conciliationData.getBillNo());
-
+                String totalDocumentCount = this.getTotalDocuments(list, details);
                 if (!totalDocumentCount.equals(conciliationData.getTotalNo())) {
-                    LOGGER.debug("Reconcilation process ends for the policy {} and bill number {} and it is fail",
-                        conciliationData.getPolicyNo(), conciliationData.getBillNo());
                     return 0;
                 }
 
-                LOGGER.debug("Reconcilation process ends for the policy {} and bill number {} and it is pass",
-                    conciliationData.getPolicyNo(), conciliationData.getBillNo());
             }
         }
         return 1;
     }
 
-    private String getTotalDocuments(List< TableDmDoc > list) {
+    private String getTotalDocuments(List< TableDmDoc > list, List< ReconcilationDetail > details) {
         Set< String > set = new HashSet<>();
         if (org.apache.commons.collections.CollectionUtils.isNotEmpty(list)) {
             for (TableDmDoc dmDoc : list) {
                 set.add(dmDoc.getMtDocTypecd());
             }
+            for (ReconcilationDetail detail : details) {
+                if (!set.contains(detail.getDocType())) {
+                    LOGGER.debug("Document Mismatch --> Reconciliation failed for cycle date {} ",
+                        list.get(0).getDocCreationDt());
+                    return "0";
+                }
+            }
+
             return String.valueOf(set.size());
         }
         return "0";
@@ -214,6 +214,23 @@ public class BatchReconciliationServiceImpl implements BatchReconciliationServic
             return property.trim();
         }
         return StringUtils.EMPTY;
+    }
+
+    @Override
+    public Set< String > getPolicyInfo(String cycleDate, String debtorCode) {
+        Set< String > finalSet = new HashSet<>();
+        List< TableDmDoc > list = new ArrayList< TableDmDoc >();
+        if (StringUtils.isNotBlank(debtorCode) && debtorCode.equals("Y")) {
+            list = tableDmDocRepository.getPolicyInfoWithDebtorCode(cycleDate, "PrintingAgent_CSD");
+        } else {
+            list = tableDmDocRepository.getPolicyInfoWithoutDebtorCode(cycleDate, "PrintingAgent_CSD");
+        }
+        if (org.apache.commons.collections.CollectionUtils.isNotEmpty(list)) {
+            for (TableDmDoc dmDoc : list) {
+                finalSet.add(dmDoc.getProposalNo());
+            }
+        }
+        return finalSet;
     }
 
 }

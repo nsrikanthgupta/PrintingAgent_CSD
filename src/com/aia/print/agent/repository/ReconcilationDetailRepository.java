@@ -4,6 +4,9 @@
 
 package com.aia.print.agent.repository;
 
+import java.util.List;
+
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
@@ -17,4 +20,6 @@ import com.aia.print.agent.entiry.ReconcilationDetail;
 @Repository
 public interface ReconcilationDetailRepository extends CrudRepository< ReconcilationDetail , String > {
 
+    @Query("select bjc from ReconcilationDetail bjc where bjc.reconcilationId = ?1")
+    List< ReconcilationDetail > getReconcilationDetailReconcileId(Long reconcilationId);
 }
